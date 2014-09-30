@@ -29,9 +29,12 @@ import com.intellij.openapi.project.Project;
 import com.intellij.psi.FileViewProvider;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
+import com.intellij.psi.TokenType;
 import com.intellij.psi.tree.IFileElementType;
 import com.intellij.psi.tree.TokenSet;
 import net.nicoulaj.idea.markdown.file.MarkdownFileElementType;
+import net.nicoulaj.idea.markdown.lang.MarkdownTokenTypes;
+import net.nicoulaj.idea.markdown.lang.lexer.MarkdownLexer;
 import net.nicoulaj.idea.markdown.lang.psi.impl.MarkdownFileImpl;
 import net.nicoulaj.idea.markdown.lang.psi.impl.MarkdownPsiElementImpl;
 import org.jetbrains.annotations.NotNull;
@@ -55,11 +58,11 @@ public class MarkdownParserDefinition implements ParserDefinition {
      * Get the lexer for lexing files in the specified project.
      *
      * @param project the project to which the lexer is connected.
-     * @return an {@link EmptyLexer} instance.
+     * @return an {@link net.nicoulaj.idea.markdown.lang.lexer.MarkdownLexer} instance.
      */
     @NotNull
     public Lexer createLexer(Project project) {
-        return new EmptyLexer();
+        return new MarkdownLexer();
     }
 
     /**
@@ -88,7 +91,7 @@ public class MarkdownParserDefinition implements ParserDefinition {
      */
     @NotNull
     public TokenSet getWhitespaceTokens() {
-        return TokenSet.EMPTY;
+        return TokenSet.create(TokenType.WHITE_SPACE, MarkdownTokenTypes.EOL);
     }
 
     /**

@@ -150,4 +150,36 @@ public interface MarkdownTokenTypes extends TokenType {
 
     /** Abbreviation token type. */
     IElementType ABBREVIATION = new MarkdownElementType("ABBREVIATION");
+
+    IElementType SINGLE_QUOTE = new MarkdownElementType("'");
+    IElementType DOUBLE_QUOTE = new MarkdownElementType("\"");
+    IElementType LPAREN = new MarkdownElementType("(");
+    IElementType RPAREN = new MarkdownElementType(")");
+    IElementType LBRACKET = new MarkdownElementType("[");
+    IElementType RBRACKET = new MarkdownElementType("]");
+    IElementType LT = new MarkdownElementType("<");
+    IElementType GT = new MarkdownElementType(">");
+
+    IElementType COLON = new MarkdownElementType(":");
+    IElementType EXCLAMATION_MARK = new MarkdownElementType("!");
+
+    IElementType EOL = new MarkdownElementType("EOL");
+
+    IElementType LINK_ID = new MarkdownElementType("LINK_ID");
+    IElementType ATX_HEADER = new MarkdownElementType("ATX_HEADER");
+    IElementType EMPH = new MarkdownElementType("EMPH");
+
+    IElementType BACKTICK = new MarkdownElementType("BACKTICK");
+
+    IElementType TAG_NAME = new MarkdownElementType("TAG_NAME");
+    IElementType STRONG = new MarkdownElementType("STRONG");
+    IElementType LIST_BULLET = new MarkdownElementType("LIST_BULLET");
+    IElementType URL = new MarkdownElementType("URL");
+    IElementType HORIZONTAL_RULE = new MarkdownElementType("HORIZONTAL_RULE");
+    IElementType SETEXT_1 = new MarkdownElementType("SETEXT_1");
+    IElementType SETEXT_2 = new MarkdownElementType("SETEXT_2");
+    IElementType LIST_NUMBER = new MarkdownElementType("LIST_NUMBER");
+
+
+    IElementType BAD_CHARACTER = new MarkdownElementType("BAD_CHARACTER");
 }
