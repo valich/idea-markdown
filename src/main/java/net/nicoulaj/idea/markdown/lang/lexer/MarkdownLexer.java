@@ -29,7 +29,7 @@ import static net.nicoulaj.idea.markdown.lang.MarkdownTokenTypes.*;
 import java.io.Reader;
 
 public class MarkdownLexer extends MergingLexerAdapter {
-    private static final TokenSet TOKENS_TO_MERGE = TokenSet.create(TEXT, WHITE_SPACE, CODE, BAD_CHARACTER);
+    private static final TokenSet TOKENS_TO_MERGE = TokenSet.create(TEXT, WHITE_SPACE, CODE, HTML_BLOCK, LINK_ID, LINK_TITLE, URL, BAD_CHARACTER);
 
     public MarkdownLexer() {
         super(new FlexAdapter(new _MarkdownLexer((Reader)null)), TOKENS_TO_MERGE);

@@ -179,6 +179,11 @@ public interface MarkdownTokenTypes extends TokenType {
     IElementType SETEXT_1 = new MarkdownElementType("SETEXT_1");
     IElementType SETEXT_2 = new MarkdownElementType("SETEXT_2");
     IElementType LIST_NUMBER = new MarkdownElementType("LIST_NUMBER");
+    IElementType FENCE_LANG = new MarkdownElementType("FENCE_LANG");
+    IElementType CODE_FENCE_START = new MarkdownElementType("CODE_FENCE_START");
+    IElementType CODE_FENCE_END = new MarkdownElementType("CODE_FENCE_END");
+    IElementType LINK_TITLE = new MarkdownElementType("LINK_TITLE");
+
 
 
     IElementType BAD_CHARACTER = new MarkdownElementType("BAD_CHARACTER");

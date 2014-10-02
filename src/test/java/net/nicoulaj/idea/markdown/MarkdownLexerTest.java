@@ -21,6 +21,7 @@
 package net.nicoulaj.idea.markdown;
 
 import com.intellij.lexer.Lexer;
+import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.testFramework.LexerTestCase;
 import net.nicoulaj.idea.markdown.lang.lexer.MarkdownLexer;
 
@@ -38,6 +39,38 @@ public class MarkdownLexerTest extends LexerTestCase {
     }
 
     public void testUnorderedLists() {
+        defaultTest();
+    }
+
+    public void testOrderedLists() {
+        defaultTest();
+    }
+
+    public void testHeaders() {
+        defaultTest();
+    }
+
+    public void testBlockquotes() {
+        defaultTest();
+    }
+
+    public void testHorizontalRules() {
+        defaultTest();
+    }
+
+    public void testCodeBlocks() {
+        defaultTest();
+    }
+
+    public void testCodeFence() {
+        defaultTest();
+    }
+
+    public void testHtmlBlocks() {
+        defaultTest();
+    }
+
+    public void testLinkDefinitions() {
         defaultTest();
     }
 
