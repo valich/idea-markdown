@@ -74,6 +74,18 @@ public class MarkdownLexerTest extends LexerTestCase {
         defaultTest();
     }
 
+    public void testCodeSpan() {
+        defaultTest();
+    }
+
+    public void testLinks() {
+        defaultTest();
+    }
+
+    public void testAutolinks() {
+        defaultTest();
+    }
+
     private void defaultTest() {
         doFileTest("md");
     }

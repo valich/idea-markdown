@@ -163,6 +163,8 @@ public interface MarkdownTokenTypes extends TokenType {
     IElementType COLON = new MarkdownElementType(":");
     IElementType EXCLAMATION_MARK = new MarkdownElementType("!");
 
+
+    IElementType HARD_LINE_BREAK = new MarkdownElementType("BR");
     IElementType EOL = new MarkdownElementType("EOL");
 
     IElementType LINK_ID = new MarkdownElementType("LINK_ID");
@@ -183,6 +185,11 @@ public interface MarkdownTokenTypes extends TokenType {
     IElementType CODE_FENCE_START = new MarkdownElementType("CODE_FENCE_START");
     IElementType CODE_FENCE_END = new MarkdownElementType("CODE_FENCE_END");
     IElementType LINK_TITLE = new MarkdownElementType("LINK_TITLE");
+
+    IElementType AUTOLINK = new MarkdownElementType("AUTOLINK");
+    IElementType EMAIL_AUTOLINK = new MarkdownElementType("EMAIL_AUTOLINK");
+    IElementType HTML_TAG = new MarkdownElementType("HTML_TAG");
+
 
 
 

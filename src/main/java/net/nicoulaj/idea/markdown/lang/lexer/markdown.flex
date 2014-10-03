@@ -28,9 +28,6 @@ import java.util.Stack;
 
   private Stack<Integer> stateStack = new Stack<Integer>();
 
-  private char parseDelimitedExitChar = 0;
-  private IElementType parseDelimitedReturnType = null;
-
   private boolean isHeader = false;
 
   private int currentIndent = 0;
@@ -39,6 +36,13 @@ import java.util.Stack;
   private BlockQuotes blockQuotes = new BlockQuotes();
   private LinkDef linkDef = new LinkDef();
   private CodeFence codeFence = new CodeFence();
+  private ParseDelimited parseDelimited = new ParseDelimited();
+
+  private static class ParseDelimited {
+    char exitChar = 0;
+    IElementType returnType = null;
+    boolean inlinesAllowed = true;
+  }
 
   private static class Paragraph {
     boolean currentLineIsNotBlank = false;
@@ -51,22 +55,29 @@ import java.util.Stack;
 
     void processMarker() {
       currentLineLevel++;
-      resetLevel();
+      adjustLevel();
+    }
+
+    void adjustLevel() {
+      level = Math.max(level, currentLineLevel);
     }
 
     void resetLevel() {
-      level = Math.max(level, currentLineLevel);
+      level = 0;
     }
   }
 
   private static class LinkDef {
     boolean wasUrl;
+    boolean wasParen;
   }
 
   private static class CodeFence {
     char fenceChar;
     int fenceLength;
     boolean typeWasRead;
+    // for code span
+    int spanLength;
   }
 
   private static class HtmlHelper {
@@ -115,14 +126,21 @@ import java.util.Stack;
     }
   }
 
-  private IElementType parseDelimited(IElementType contentsType) {
+  private void startCodeSpan() {
+    stateStack.push(yystate());
+    codeFence.spanLength = yylength();
+    yybegin(CODE_SPAN);
+  }
+
+  private IElementType parseDelimited(IElementType contentsType, boolean allowInlines) {
     char first = yycharat(0);
     char last = yycharat(yylength() - 1);
 
     stateStack.push(yystate());
 
-    parseDelimitedExitChar = last;
-    parseDelimitedReturnType = contentsType;
+    parseDelimited.exitChar = last;
+    parseDelimited.returnType = contentsType;
+    parseDelimited.inlinesAllowed = allowInlines;
 
     yybegin(PARSE_DELIMITED);
 
@@ -182,9 +200,19 @@ import java.util.Stack;
     blockQuotes.currentLineLevel = 0;
   }
 
+  private void popState() {
+    if (stateStack.isEmpty()) {
+      yybegin(AFTER_LINE_START);
+    }
+    else {
+      yybegin(stateStack.pop());
+    }
+  }
+
   private void resetState() {
     yypushback(yylength());
-    yybegin(AFTER_LINE_START);
+
+    popState();
   }
 
   private String getTagName() {
@@ -205,6 +233,17 @@ import java.util.Stack;
     return true;
   }
 
+  private boolean canInline() {
+    return yystate() == AFTER_LINE_START || yystate() == PARSE_DELIMITED && parseDelimited.inlinesAllowed;
+  }
+
+  private IElementType getReturnGeneralized(IElementType defaultType) {
+    if (canInline()) {
+      return defaultType;
+    }
+    return parseDelimited.returnType;
+  }
+
 %}
 
 DIGIT = [0-9]
@@ -221,16 +260,30 @@ LINK_DEST_CHAR = [^ \t\f\r\n()] | \\"(" | \\")"
 LINK_DESTINATION = "<" ([^\r\n<>] | \\"<" | \\">")* ">" | {LINK_DEST_CHAR}* ("(" {LINK_DEST_CHAR}* ")" {LINK_DEST_CHAR}*)*
 LINK_TITLE = {QUOTED_TEXT} | "(" (\\")" | [^)])* ")"
 
-TAG_START = "<" {ALPHANUM}+
-TAG_END = "</" {ALPHANUM}+ {WHITE_SPACE}* ">"
 HTML_COMMENT = "<!" "-"{2,4} ">" | "<!--" ([^-] | "-"[^-])* "-->"
 PROCESSING_INSTRUCTION = "<?" ([^?] | "?"[^>])* "?>"
-DECLARATION = "<!" [A-Z]+ {WHITE_SPACE} [^>] ">"
+DECLARATION = "<!" [A-Z]+ {WHITE_SPACE}+ [^>] ">"
 CDATA = "<![CDATA[" ([^\]] | "]"[^\]] | "]]"[^>])* "]]>"
+
+TAG_NAME = [a-zA-Z]{ALPHANUM}*
+ATTRIBUTE_NAME = [a-zA-Z:-] ({ALPHANUM} | [_.:-])*
+ATTRIBUTE_VALUE = {QUOTED_TEXT} | [^ \t\f\n\r\"\'=<>`]+
+ATTRIBUTE_VALUE_SPEC = {WHITE_SPACE}* "=" {WHITE_SPACE}* {ATTRIBUTE_VALUE}
+ATTRUBUTE = {WHITE_SPACE}+ {ATTRIBUTE_NAME} {ATTRIBUTE_VALUE_SPEC}?
+OPEN_TAG = "<" {TAG_NAME} {ATTRUBUTE}* {WHITE_SPACE}* "/"? ">"
+CLOSING_TAG = "</" {TAG_NAME} {WHITE_SPACE}* ">"
+HTML_TAG = {OPEN_TAG} | {CLOSING_TAG} | {HTML_COMMENT} | {PROCESSING_INSTRUCTION} | {DECLARATION} | {CDATA}
+
+TAG_START = "<" {TAG_NAME}
+TAG_END = "</" {TAG_NAME} {WHITE_SPACE}* ">"
+
+SCHEME = [a-zA-Z]+
+AUTOLINK = "<" {SCHEME} ":" [^ \t\f\n<>]+ ">"
+EMAIL_AUTOLINK = "<" [a-zA-Z0-9.!#$%&'*+/=?\^_`{|}~-]+ "@"[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])? (\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)* ">"
 
 LINK_ID = [^\n\[]*
 
-%state HTML_BLOCK, TAG_START, AFTER_LINE_START, LINK, LINK_DEF, PARSE_DELIMITED, CODE, CODE_FENCE
+%state HTML_BLOCK, TAG_START, AFTER_LINE_START, LINK, LINK_DEF, PARSE_DELIMITED, CODE, CODE_FENCE, CODE_SPAN, LINK_REF
 
 %%
 
@@ -248,8 +301,7 @@ LINK_ID = [^\n\[]*
         yybegin(HTML_BLOCK);
         yypushback(yylength());
       } else {
-        yybegin(TAG_START);
-        return Token.TAG_NAME;
+        resetState();
       }
     }
   }
@@ -277,7 +329,7 @@ LINK_ID = [^\n\[]*
     if (isFourIndent()) {
       resetState();
     }
-    else if (paragraph.lineCount == 1) {
+    else if (paragraph.lineCount == 1 && blockQuotes.level == blockQuotes.currentLineLevel) {
       return yycharat(0) == '=' ? Token.SETEXT_1 : Token.SETEXT_2;
     }
     else if (yycharat(0) == '-' && yylength() >= 3) {
@@ -355,17 +407,44 @@ LINK_ID = [^\n\[]*
     resetState();
   }
 
-  {EOL} {
+  {WHITE_SPACE}* {EOL} {
     resetState();
   }
 }
 
-<AFTER_LINE_START> {
 
+<AFTER_LINE_START, PARSE_DELIMITED> {
   // Escaping
   \\[\\`*_{}\[\]()#+-.!] {
-    return Token.TEXT;
+    return getReturnGeneralized(Token.TEXT);
   }
+
+  // Backticks (code span)
+  "`"+ {
+    if (canInline()) {
+      startCodeSpan();
+      return Token.BACKTICK;
+    }
+    return parseDelimited.returnType;
+  }
+
+  // Emphasis
+  {WHITE_SPACE}+ ("*" | "_") {WHITE_SPACE}+ {
+    return getReturnGeneralized(Token.TEXT);
+  }
+
+  "*" | "_" {
+    return getReturnGeneralized(Token.EMPH);
+  }
+
+  {AUTOLINK} { return parseDelimited(Token.AUTOLINK, false); }
+  {EMAIL_AUTOLINK} { return parseDelimited(Token.EMAIL_AUTOLINK, false); }
+
+  {HTML_TAG} { return Token.HTML_TAG; }
+
+}
+
+<AFTER_LINE_START> {
 
   // atx header end
   "#"+ {WHITE_SPACE}* $ {
@@ -375,50 +454,55 @@ LINK_ID = [^\n\[]*
     return Token.TEXT;
   }
 
-  {TAG_START} {
-    yybegin(TAG_START);
-    return Token.TAG_NAME;
-  }
-
   {WHITE_SPACE}+ {
     return Token.TEXT;
   }
 
   // Links
-  "!"? "[" {LINK_ID} "]" / {WHITE_SPACE}* ("(" {WHITE_SPACE}* {LINK_DESTINATION} {WHITE_SPACE}* ({QUOTED_TEXT} {WHITE_SPACE}*)? ")" | "[" {LINK_ID} "]" ) {
+  "!"? "[" {LINK_ID} "]" / {WHITE_SPACE}* "(" {WHITE_SPACE}* {LINK_DESTINATION} {WHITE_SPACE}* ({WHITE_SPACE} {LINK_TITLE} {WHITE_SPACE}*)? ")" {
     if (yycharat(0) == '!') {
-      yypushback(1);
+      yypushback(yylength() - 1);
       return Token.EXCLAMATION_MARK;
     }
 
+    linkDef.wasUrl = false;
+    linkDef.wasParen = false;
+
     yybegin(LINK);
-    return parseDelimited(Token.TEXT);
+    return parseDelimited(Token.LINK_ID, true);
   }
 
-  "[" {LINK_ID} "]" / ":" {EOL_AND_SPACES}? {LINK_DESTINATION} ({EOL_AND_SPACES}? {LINK_TITLE})? {WHITE_SPACE}* {EOL} {
+  "!"? "[" {LINK_ID} "]" / {WHITE_SPACE}* "[" {LINK_ID} "]" {
+      if (yycharat(0) == '!') {
+        yypushback(yylength() - 1);
+        return Token.EXCLAMATION_MARK;
+      }
+
+      yybegin(LINK_REF);
+      return parseDelimited(Token.LINK_ID, true);
+  }
+
+  "[" {LINK_ID} "]" / ":" {
     yybegin(LINK_DEF);
     linkDef.wasUrl = false;
-    return parseDelimited(Token.LINK_ID);
+    return parseDelimited(Token.LINK_ID, true);
   }
 
-  // Emphasis
-  {WHITE_SPACE}+ ("*" | "_") {WHITE_SPACE}+ {
-    return Token.TEXT;
+  "[" {LINK_ID} "]" / ({WHITE_SPACE} | {EOL}) {
+    return parseDelimited(Token.LINK_ID, true);
   }
 
-  "*" | "_" {
-    return Token.EMPH;
-  }
-  "**" | "__" {
-    return Token.STRONG;
-  }
+  {WHITE_SPACE}* ({EOL} {WHITE_SPACE}*)+ {
+    int lastSpaces = yytext().toString().indexOf("\n");
+    if (lastSpaces >= 2) {
+      yypushback(yylength() - lastSpaces);
+      return Token.HARD_LINE_BREAK;
+    }
+    else if (lastSpaces > 0) {
+      yypushback(yylength() - lastSpaces);
+      return Token.WHITE_SPACE;
+    }
 
-  // Backticks (code)
-  "`"+ {
-    return Token.BACKTICK;
-  }
-
-  ({EOL} {WHITE_SPACE}*)+ {
     processEol();
     return Token.EOL;
   }
@@ -432,49 +516,49 @@ LINK_ID = [^\n\[]*
 
 }
 
-<LINK> {
+<LINK_REF> {
   {WHITE_SPACE}+ {
     return Token.WHITE_SPACE;
   }
 
   "[" {LINK_ID} "]" {
-    yybegin(AFTER_LINE_START);
-    return parseDelimited(Token.LINK_ID);
+    popState();
+    return parseDelimited(Token.LINK_ID, true);
   }
 
-  "(" { return Token.LPAREN; }
-  ")" {
-    yybegin(AFTER_LINE_START);
-    return Token.RPAREN;
+  {EOL} | . {
+    return Token.BAD_CHARACTER;
   }
-
-  {LINK_DESTINATION} { return Token.URL; }
-
-  {QUOTED_TEXT} { return parseDelimited(Token.TEXT); }
-
-  {EOL} | . { resetState(); }
 }
 
-<LINK_DEF> {
-  {WHITE_SPACE}+ { return Token.WHITE_SPACE; }
-
-  {EOL} { return Token.EOL; }
-
-  ":" { return Token.COLON; }
-
+<LINK, LINK_DEF> {
   {LINK_TITLE} {
+    if (yystate() == LINK && yycharat(0) == '(' && !linkDef.wasParen) {
+      yypushback(yylength() - 1);
+      linkDef.wasParen = true;
+      return Token.LPAREN;
+    }
+
     if (!linkDef.wasUrl) {
       linkDef.wasUrl = true;
       return Token.URL;
     }
 
-    yybegin(YYINITIAL);
-    return parseDelimited(Token.LINK_TITLE);
+    if (yystate() == LINK_DEF) {
+      yybegin(YYINITIAL);
+    }
+    return parseDelimited(Token.LINK_TITLE, false);
   }
 
   {LINK_DESTINATION} {
+    if (yystate() == LINK && yycharat(0) == '(' && !linkDef.wasParen) {
+      yypushback(yylength() - 1);
+      linkDef.wasParen = true;
+      return Token.LPAREN;
+    }
+
     if (yycharat(0) == '<') {
-      return parseDelimited(Token.URL);
+      return parseDelimited(Token.URL, false);
     }
     else {
       if (!linkDef.wasUrl) {
@@ -486,11 +570,42 @@ LINK_ID = [^\n\[]*
         return Token.URL;
       }
 
-      yybegin(YYINITIAL);
+      if (yystate() == LINK_DEF) {
+        yybegin(YYINITIAL);
+      }
       yypushback(yylength());
     }
   }
+}
 
+<LINK> {
+  {WHITE_SPACE}+ {
+    return Token.WHITE_SPACE;
+  }
+
+  "[" {LINK_ID} "]" {
+    yybegin(AFTER_LINE_START);
+    return parseDelimited(Token.LINK_ID, true);
+  }
+
+  "(" {
+    linkDef.wasParen = true;
+    return Token.LPAREN;
+  }
+  ")" {
+    yybegin(AFTER_LINE_START);
+    return Token.RPAREN;
+  }
+
+  {EOL} | . { resetState(); }
+}
+
+<LINK_DEF> {
+  {WHITE_SPACE}+ { return Token.WHITE_SPACE; }
+
+  {EOL} { return Token.EOL; }
+
+  ":" { return Token.COLON; }
 
   {EOL} {WHITE_SPACE}* {EOL} {
     resetState();
@@ -501,16 +616,12 @@ LINK_ID = [^\n\[]*
 <PARSE_DELIMITED> {
   {EOL} { resetState(); }
 
-  \\. {
-    return parseDelimitedReturnType;
-  }
-
   {EOL} | . {
-    if (yycharat(0) == parseDelimitedExitChar) {
+    if (yycharat(0) == parseDelimited.exitChar) {
       yybegin(stateStack.pop());
       return getDelimiterTokenType(yycharat(0));
     }
-    return parseDelimitedReturnType;
+    return parseDelimited.returnType;
   }
 
 }
@@ -531,6 +642,21 @@ LINK_ID = [^\n\[]*
   }
 
   {EOL} | . { return Token.CODE; }
+}
+
+<CODE_SPAN> {
+  "`"+ {
+    if (yylength() == codeFence.spanLength) {
+      yybegin(stateStack.pop());
+      return Token.BACKTICK;
+    }
+
+    return Token.CODE;
+  }
+
+  {EOL} | [^`]+ {
+    return Token.CODE;
+  }
 }
 
 <CODE_FENCE> {
