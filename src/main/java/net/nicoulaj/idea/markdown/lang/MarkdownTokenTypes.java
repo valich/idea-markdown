@@ -34,92 +34,14 @@ public interface MarkdownTokenTypes extends TokenType {
     /** Plain text token type. */
     IElementType TEXT = new MarkdownElementType("TEXT");
 
-    /** Bold text token type. */
-    IElementType BOLD = new MarkdownElementType("BOLD");
-
-    /** Italic token type. */
-    IElementType ITALIC = new MarkdownElementType("ITALIC");
-
-    /** Header of level 1 token type. */
-    IElementType HEADER_LEVEL_1 = new MarkdownElementType("HEADER_LEVEL_1");
-
-    /** Header of level 2 token type. */
-    IElementType HEADER_LEVEL_2 = new MarkdownElementType("HEADER_LEVEL_2");
-
-    /** Header of level 3 token type. */
-    IElementType HEADER_LEVEL_3 = new MarkdownElementType("HEADER_LEVEL_3");
-
-    /** Header of level 4 token type. */
-    IElementType HEADER_LEVEL_4 = new MarkdownElementType("HEADER_LEVEL_4");
-
-    /** Header of level 5 token type. */
-    IElementType HEADER_LEVEL_5 = new MarkdownElementType("HEADER_LEVEL_5");
-
-    /** Header of level 6 token type. */
-    IElementType HEADER_LEVEL_6 = new MarkdownElementType("HEADER_LEVEL_6");
-
     /** Code token type. */
     IElementType CODE = new MarkdownElementType("CODE");
-
-    /** Quote token type. */
-    IElementType QUOTE = new MarkdownElementType("QUOTE");
 
     /** Table token type. */
     IElementType TABLE = new MarkdownElementType("TABLE");
 
-    /** HRule token type. */
-    IElementType HRULE = new MarkdownElementType("HRULE");
-
-    /** Special text token type. */
-    IElementType SPECIAL_TEXT = new MarkdownElementType("SPECIAL_TEXT");
-
-    /** Strikethrough token type. */
-    IElementType STRIKETHROUGH = new MarkdownElementType("STRIKETHROUGH");
-
-    /** Link token type. */
-    IElementType EXPLICIT_LINK = new MarkdownElementType("EXPLICIT_LINK");
-
-    /** Image token type. */
-    IElementType IMAGE = new MarkdownElementType("IMAGE");
-
-    /** Reference image token type. */
-    IElementType REFERENCE_IMAGE = new MarkdownElementType("REFERENCE_IMAGE");
-
-    /** Reference link token type. */
-    IElementType REFERENCE_LINK = new MarkdownElementType("REFERENCE_LINK");
-
-    /** Wiki link token type. */
-    IElementType WIKI_LINK = new MarkdownElementType("WIKI_LINK");
-
-    /** Auto link token type. */
-    IElementType AUTO_LINK = new MarkdownElementType("AUTO_LINK");
-
-    /** Mail link token type. */
-    IElementType MAIL_LINK = new MarkdownElementType("MAIL_LINK");
-
-    /** Verbatim token type. */
-    IElementType VERBATIM = new MarkdownElementType("VERBATIM");
-
     /** Block quote token type. */
     IElementType BLOCK_QUOTE = new MarkdownElementType("BLOCK_QUOTE");
-
-    /** Bullet list token type. */
-    IElementType BULLET_LIST = new MarkdownElementType("BULLET_LIST");
-
-    /** Ordered list token type. */
-    IElementType ORDERED_LIST = new MarkdownElementType("ORDERED_LIST");
-
-    /** List item token type. */
-    IElementType LIST_ITEM = new MarkdownElementType("LIST_ITEM");
-
-    /** Definition list token type. */
-    IElementType DEFINITION_LIST = new MarkdownElementType("DEFINITION_LIST");
-
-    /** Definition token type. */
-    IElementType DEFINITION = new MarkdownElementType("DEFINITION");
-
-    /** Definition term token type. */
-    IElementType DEFINITION_TERM = new MarkdownElementType("DEFINITION_TERM");
 
     /** Table body token type. */
     IElementType TABLE_BODY = new MarkdownElementType("TABLE_BODY");
@@ -144,12 +66,6 @@ public interface MarkdownTokenTypes extends TokenType {
 
     /** Inline HTML token type. */
     IElementType INLINE_HTML = new MarkdownElementType("INLINE_HTML");
-
-    /** Reference token type. */
-    IElementType REFERENCE = new MarkdownElementType("REFERENCE");
-
-    /** Abbreviation token type. */
-    IElementType ABBREVIATION = new MarkdownElementType("ABBREVIATION");
 
     IElementType SINGLE_QUOTE = new MarkdownElementType("'");
     IElementType DOUBLE_QUOTE = new MarkdownElementType("\"");

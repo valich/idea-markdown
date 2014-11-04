@@ -50,3 +50,11 @@ atx headers:
 ### foo ### b
 
     ## And this is not a header; it's a CODE
+
+`Foo
+----
+`
+
+<a title="a lot
+---
+of dashes"/>

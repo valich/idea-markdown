@@ -22,6 +22,7 @@ package net.nicoulaj.idea.markdown.lang.psi.impl;
 
 import com.intellij.extapi.psi.PsiFileBase;
 import com.intellij.openapi.application.ApplicationInfo;
+import com.intellij.openapi.editor.impl.TrailingSpacesStripper;
 import com.intellij.openapi.fileTypes.FileType;
 import com.intellij.openapi.util.Key;
 import com.intellij.openapi.vfs.VirtualFile;
@@ -68,49 +69,10 @@ public class MarkdownFileImpl extends PsiFileBase implements MarkdownFile {
 
         // #138: ignore "strip trailing white space" setting
         if (file != null) {
-            Key<String> overrideStripTrailingSpacesKey = getOverrideStripTrailingSpacesKey();
-
-            if (overrideStripTrailingSpacesKey != null) {
-                file.putUserData(overrideStripTrailingSpacesKey, STRIP_TRAILING_SPACES_NONE);
-            }
+            file.putUserData(TrailingSpacesStripper.OVERRIDE_STRIP_TRAILING_SPACES_KEY, STRIP_TRAILING_SPACES_NONE);
         }
 
         return file;
-    }
-
-    /**
-     * #172
-     * Gets OVERRIDE_STRIP_TRAILING_SPACES_KEY from the TrailingSpacesStripper class. Since the package
-     * in which the class is located depends on api version, some checks are required.
-     *
-     * @return a key for "strip trailing white space" setting
-     */
-    @Nullable
-    private static Key<String> getOverrideStripTrailingSpacesKey() {
-        final String apiVersion = ApplicationInfo.getInstance().getApiVersion();
-        final Pattern apiVersionPattern = Pattern.compile("^[A-Z]+-(\\d+\\.\\d+)$");
-        final Matcher matcher = apiVersionPattern.matcher(apiVersion);
-
-        if (!matcher.matches()) {
-            return null;
-        }
-
-        String buildVersion = matcher.group(1);
-
-        final String classPath;
-        if (buildVersion.compareTo("138") >= 0) {
-            classPath = "com.intellij.openapi.editor.impl.TrailingSpacesStripper";
-        }
-        else {
-            classPath = "com.intellij.openapi.fileEditor.impl.TrailingSpacesStripper";
-        }
-
-        try {
-            //noinspection unchecked
-            return (Key<String>) Class.forName(classPath).getDeclaredField("OVERRIDE_STRIP_TRAILING_SPACES_KEY").get(null);
-        } catch (Exception e) {
-            return null;
-        }
     }
 
 

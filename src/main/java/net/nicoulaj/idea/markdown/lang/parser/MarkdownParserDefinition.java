@@ -34,6 +34,7 @@ import com.intellij.psi.tree.IFileElementType;
 import com.intellij.psi.tree.TokenSet;
 import net.nicoulaj.idea.markdown.file.MarkdownFileElementType;
 import net.nicoulaj.idea.markdown.lang.MarkdownTokenTypes;
+import net.nicoulaj.idea.markdown.lang.dialects.commonmark.CommonMarkMarkerProcessor;
 import net.nicoulaj.idea.markdown.lang.lexer.MarkdownLexer;
 import net.nicoulaj.idea.markdown.lang.psi.impl.MarkdownFileImpl;
 import net.nicoulaj.idea.markdown.lang.psi.impl.MarkdownPsiElementImpl;
@@ -72,7 +73,7 @@ public class MarkdownParserDefinition implements ParserDefinition {
      * @return a {@link MarkdownParser} instance.
      */
     public PsiParser createParser(Project project) {
-        return new MarkdownParser();
+        return new MarkdownParser(new CommonMarkMarkerProcessor());
     }
 
     /**
@@ -91,7 +92,7 @@ public class MarkdownParserDefinition implements ParserDefinition {
      */
     @NotNull
     public TokenSet getWhitespaceTokens() {
-        return TokenSet.create(TokenType.WHITE_SPACE, MarkdownTokenTypes.EOL);
+        return TokenSet.create(TokenType.WHITE_SPACE);
     }
 
     /**

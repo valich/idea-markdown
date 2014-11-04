@@ -23,7 +23,11 @@ package net.nicoulaj.idea.markdown.lang.parser;
 import com.intellij.lang.ASTNode;
 import com.intellij.lang.PsiBuilder;
 import com.intellij.lang.PsiParser;
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.psi.tree.IElementType;
+import com.intellij.psi.tree.TokenSet;
+import net.nicoulaj.idea.markdown.lang.MarkdownElementTypes;
+import net.nicoulaj.idea.markdown.lang.MarkdownTokenTypes;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -33,6 +37,17 @@ import org.jetbrains.annotations.NotNull;
  * @since 0.1
  */
 public class MarkdownParser implements PsiParser {
+
+    private final static Logger LOG = Logger.getInstance(MarkdownParser.class);
+
+
+    @NotNull
+    private MarkerProcessor markerProcessor;
+
+
+    public MarkdownParser(@NotNull MarkerProcessor markerProcessor) {
+        this.markerProcessor = markerProcessor;
+    }
 
     /**
      * Parse the contents of the specified PSI builder and returns an AST tree with the
@@ -44,17 +59,19 @@ public class MarkdownParser implements PsiParser {
      */
     @NotNull
     public ASTNode parse(IElementType root, PsiBuilder builder) {
-
         PsiBuilder.Marker rootMarker = builder.mark();
 
-        // TODO Actual parsing not implemented
-
         while (!builder.eof()) {
+            final IElementType tokenType = builder.getTokenType();
+            assert tokenType != null : "We have checked it's not eof!";
+            markerProcessor.processToken(tokenType, builder);
             builder.advanceLexer();
         }
+        markerProcessor.flushMarkers();
 
         rootMarker.done(root);
 
         return builder.getTreeBuilt();
     }
+
 }
