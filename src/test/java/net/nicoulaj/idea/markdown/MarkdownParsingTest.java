@@ -45,6 +45,10 @@ public class MarkdownParsingTest extends ParsingTestCase {
         defaultTest();
     }
 
+    public void testOrderedLists() {
+        defaultTest();
+    }
+
     public void testBlockquotes() {
         defaultTest();
     }
