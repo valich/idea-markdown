@@ -66,7 +66,8 @@ public class ParagraphMarkerBlock extends MarkerBlockImpl {
             || afterEol == MarkdownTokenTypes.LIST_BULLET
             || afterEol == MarkdownTokenTypes.LIST_NUMBER
             || afterEol == MarkdownTokenTypes.ATX_HEADER
-            || afterEol == MarkdownTokenTypes.BLOCK_QUOTE) {
+            || afterEol == MarkdownTokenTypes.BLOCK_QUOTE
+            || afterEol == MarkdownTokenTypes.HTML_BLOCK) {
             return ProcessingResult.DEFAULT;
         }
 

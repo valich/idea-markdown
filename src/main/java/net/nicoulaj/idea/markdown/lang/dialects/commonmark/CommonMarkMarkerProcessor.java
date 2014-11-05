@@ -68,7 +68,8 @@ public class CommonMarkMarkerProcessor extends FixedPriorityListMarkerProcessor 
         }
         if (tokenType == MarkdownTokenTypes.HORIZONTAL_RULE
             || tokenType == MarkdownTokenTypes.SETEXT_1
-            || tokenType == MarkdownTokenTypes.SETEXT_2) {
+            || tokenType == MarkdownTokenTypes.SETEXT_2
+            || tokenType == MarkdownTokenTypes.HTML_BLOCK) {
             return NO_BLOCKS;
         }
 
