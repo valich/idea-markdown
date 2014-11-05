@@ -109,7 +109,7 @@ public abstract class MarkerProcessor {
 
             final MarkdownConstraints next;
             if (type == MarkdownTokenTypes.WHITE_SPACE) {
-                next = constraints.fillImplicitsOnWhiteSpace(builder, rawIndex, lineStartOffset, topBlockConstraints);
+                next = constraints.fillImplicitsOnWhiteSpace(builder, rawIndex, topBlockConstraints);
             }
             else if (MarkdownConstraints.isConstraintType(type)) {
                 next = constraints.addModifier(type, builder, rawIndex);

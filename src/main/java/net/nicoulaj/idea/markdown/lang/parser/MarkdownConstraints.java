@@ -24,11 +24,14 @@ import com.intellij.lang.PsiBuilder;
 import com.intellij.psi.TokenType;
 import com.intellij.psi.tree.IElementType;
 import net.nicoulaj.idea.markdown.lang.MarkdownTokenTypes;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class MarkdownConstraints {
     public static final MarkdownConstraints BASE = new MarkdownConstraints(new int[0], new char[0], new boolean[0]);
+
+    public static final char BQ_CHAR = '>';
 
     private int[] indents;
     private char[] types;
@@ -62,6 +65,7 @@ public class MarkdownConstraints {
         return indents[indents.length - 1];
     }
 
+    @Contract("null -> false")
     public static boolean isConstraintType(@Nullable IElementType type) {
         return type == MarkdownTokenTypes.LIST_NUMBER
                || type == MarkdownTokenTypes.LIST_BULLET
@@ -104,7 +108,7 @@ public class MarkdownConstraints {
 
     private boolean containsListMarkers(int upToIndex) {
         for (int i = 0; i < upToIndex; ++i) {
-            if (types[i] != '>' && isExplicit[i]) {
+            if (types[i] != BQ_CHAR && isExplicit[i]) {
                 return true;
             }
         }
@@ -133,7 +137,7 @@ public class MarkdownConstraints {
             assert type != null;
             if (type == TokenType.WHITE_SPACE) {
                 if (isAlignedWithPrev) {
-                    result = result.fillImplicitsOnWhiteSpace(builder, offset, myStartOffset, prevLineConstraints);
+                    result = result.fillImplicitsOnWhiteSpace(builder, offset, prevLineConstraints);
                 }
                 // Here we hope that two whitespace tokens would not appear so we would not update isAlignedWithPrev
             } else {
@@ -150,19 +154,30 @@ public class MarkdownConstraints {
     @NotNull
     public MarkdownConstraints fillImplicitsOnWhiteSpace(@NotNull PsiBuilder builder,
                                                           int rawIndex,
-                                                          int startOffset,
                                                           @NotNull MarkdownConstraints prevLineConstraints) {
         MarkdownConstraints result = this;
+        final int whitespaceLen = builder.rawTokenTypeStart(rawIndex + 1) - builder.rawTokenTypeStart(rawIndex);
+        assert whitespaceLen > 0 : "Token of zero length?";
+
+        int eaten = 0;
 
         int n = indents.length;
         int m = prevLineConstraints.indents.length;
+
+        if (n > 0 && types[n - 1] == BQ_CHAR) {
+            eaten++;
+        }
+
         for (int i = n; i < m; ++i) {
-            if (prevLineConstraints.types[i] == '>') {
+            if (prevLineConstraints.types[i] == BQ_CHAR) {
                 break;
             }
+            // Else it's list marker
 
-            if (prevLineConstraints.indents[i] + 4 <= builder.rawTokenTypeStart(rawIndex + 1) - startOffset) {
-                result = new MarkdownConstraints(result, prevLineConstraints.indents[i], prevLineConstraints.types[i], false);
+            final int indentDelta = prevLineConstraints.indents[i] - (i == 0 ? 0 : prevLineConstraints.indents[i - 1]);
+            if (eaten + indentDelta <= whitespaceLen) {
+                eaten += indentDelta;
+                result = new MarkdownConstraints(result, result.getIndent() + indentDelta, prevLineConstraints.types[i], false);
             }
             else {
                 break;
@@ -185,22 +200,41 @@ public class MarkdownConstraints {
     public MarkdownConstraints addModifier(@NotNull IElementType type, @NotNull PsiBuilder builder, int rawOffset) {
         char modifierChar = getModifierCharAtRawIndex(builder, rawOffset);
 
+        final int lineStartOffset = calcLineStartOffset(builder, rawOffset);
+        final int currentIndent = getIndent();
+        final int markerStartOffset = builder.rawTokenTypeStart(rawOffset) - lineStartOffset;
+        final int whiteSpaceBefore = markerStartOffset - currentIndent;
+        assert whiteSpaceBefore == 0 || builder.rawLookup(rawOffset - 1) == TokenType.WHITE_SPACE : "If some indent is present, it should have been whitespace";
+        assert whiteSpaceBefore < 4 : "Should not add modifier: indent of 4 is a code block";
+
         if (type == MarkdownTokenTypes.LIST_BULLET
                 || type == MarkdownTokenTypes.LIST_NUMBER) {
             int indentAddition = calcIndentAdditionForList(builder, rawOffset);
-            return new MarkdownConstraints(this, getIndent() + indentAddition, modifierChar, true);
+            return new MarkdownConstraints(this, currentIndent + whiteSpaceBefore + indentAddition, modifierChar, true);
         }
         else if (type == MarkdownTokenTypes.BLOCK_QUOTE) {
-            return new MarkdownConstraints(this, getIndent() + 2, modifierChar, true);
+            return new MarkdownConstraints(this, currentIndent + whiteSpaceBefore + 2, modifierChar, true);
         }
 
         throw new IllegalArgumentException("modifier must be either a list marker or a blockquote marker");
     }
 
+    private static int calcLineStartOffset(@NotNull PsiBuilder builder, int rawOffset) {
+        for (int index = rawOffset - 1;; --index) {
+            final IElementType type = builder.rawLookup(index);
+            if (type == null) {
+                return 0;
+            }
+            if (type == MarkdownTokenTypes.EOL) {
+                return builder.rawTokenTypeStart(index + 1);
+            }
+        }
+    }
+
     private static char getModifierCharAtRawIndex(@NotNull PsiBuilder builder, int index) {
         final IElementType type = builder.rawLookup(index);
         if (type == MarkdownTokenTypes.BLOCK_QUOTE) {
-            return '>';
+            return BQ_CHAR;
         }
         if (type == MarkdownTokenTypes.LIST_NUMBER) {
             return builder.getOriginalText().charAt(builder.rawTokenTypeStart(index + 1) - 1);
@@ -214,11 +248,18 @@ public class MarkdownConstraints {
 
     // overridable
     protected int calcIndentAdditionForList(@NotNull PsiBuilder builder, int rawOffset) {
-        int lookAhead = 2;
+        int markerWidth = builder.rawTokenTypeStart(rawOffset + 1) - builder.rawTokenTypeStart(rawOffset);
+
         if (builder.rawLookup(1 + rawOffset) != TokenType.WHITE_SPACE) {
-            lookAhead = 1;
+            return markerWidth;
+        } else {
+            final int whitespaceAfterLength = builder.rawTokenTypeStart(2 + rawOffset) - builder.rawTokenTypeStart(1 + rawOffset);
+            if (whitespaceAfterLength >= 4) {
+                return markerWidth + 1;
+            } else {
+                return markerWidth + whitespaceAfterLength;
+            }
         }
-        return builder.rawTokenTypeStart(lookAhead + rawOffset) - builder.rawTokenTypeStart(rawOffset);
     }
 
     @Override public String toString() {
