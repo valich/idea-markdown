@@ -20,6 +20,7 @@
  */
 package net.nicoulaj.idea.markdown.lang.dialects;
 
+import com.intellij.openapi.util.Pair;
 import com.intellij.psi.tree.IElementType;
 import net.nicoulaj.idea.markdown.lang.parser.MarkdownConstraints;
 import net.nicoulaj.idea.markdown.lang.parser.MarkerBlock;
@@ -36,16 +37,15 @@ public abstract class FixedPriorityListMarkerProcessor extends MarkerProcessor {
     public FixedPriorityListMarkerProcessor(@NotNull MarkdownConstraints startingConstraints) {
         super(startingConstraints);
 
-        final List<IElementType> priorityList = getPriorityList();
+        final List<Pair<IElementType, Integer>> priorityList = getPriorityList();
 
         priorityMap = new IdentityHashMap<IElementType, Integer>();
-        int priority = 0;
-        for (IElementType type : priorityList) {
-            priorityMap.put(type, priority++);
+        for (Pair<IElementType, Integer> pair : priorityList) {
+            priorityMap.put(pair.first, pair.second);
         }
     }
 
-    protected abstract List<IElementType> getPriorityList();
+    protected abstract List<Pair<IElementType, Integer>> getPriorityList();
 
     @NotNull @Override protected List<Integer> getPrioritizedMarkerPermutation() {
         final List<MarkerBlock> markersStack = getMarkersStack();
@@ -64,18 +64,27 @@ public abstract class FixedPriorityListMarkerProcessor extends MarkerProcessor {
                 final MarkerBlock block1 = markersStack.get(o1);
                 final MarkerBlock block2 = markersStack.get(o2);
 
-                if (block1 instanceof MarkerBlockImpl && block2 instanceof MarkerBlockImpl) {
-                    final IElementType type1 = ((MarkerBlockImpl) block1).getDefaultNodeType();
-                    final IElementType type2 = ((MarkerBlockImpl) block2).getDefaultNodeType();
-                    final int diff = priorityMap.get(type1) - priorityMap.get(type2);
-                    if (diff != 0) {
-                        return diff;
-                    }
+                final int diff = getPriority(block1) - getPriority(block2);
+                if (diff != 0) {
+                    return -diff;
                 }
                 return o2 - o1;
             }
         });
         return result;
+    }
+
+    private Integer getPriority(MarkerBlock block) {
+        if (!(block instanceof MarkerBlockImpl)) {
+            return 0;
+        }
+
+        final IElementType type = ((MarkerBlockImpl) block).getDefaultNodeType();
+        if (priorityMap.containsKey(type)) {
+            return priorityMap.get(type);
+        }
+
+        return 0;
     }
 
 }

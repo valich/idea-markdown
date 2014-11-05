@@ -21,6 +21,7 @@
 package net.nicoulaj.idea.markdown.lang.dialects.commonmark;
 
 import com.intellij.lang.PsiBuilder;
+import com.intellij.openapi.util.Pair;
 import com.intellij.psi.TokenType;
 import com.intellij.psi.tree.IElementType;
 import com.intellij.util.containers.ContainerUtil;
@@ -31,10 +32,13 @@ import net.nicoulaj.idea.markdown.lang.parser.MarkdownParserUtil;
 import net.nicoulaj.idea.markdown.lang.parser.MarkerBlock;
 import net.nicoulaj.idea.markdown.lang.parser.MarkerProcessor;
 import net.nicoulaj.idea.markdown.lang.parser.markerblocks.*;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static net.nicoulaj.idea.markdown.lang.MarkdownElementTypes.*;
 
 
 public class CommonMarkMarkerProcessor extends FixedPriorityListMarkerProcessor {
@@ -42,10 +46,20 @@ public class CommonMarkMarkerProcessor extends FixedPriorityListMarkerProcessor 
         super(MarkdownConstraints.BASE);
     }
 
-    @Override protected List<IElementType> getPriorityList() {
-        return ContainerUtil.list(
-//            CODE_FENCE, BLOCK_QUOTE, UNORDERED_LIST, ORDERED_LIST, PARAGRAPH, STRONG, EMPH
-        );
+    @Override protected List<Pair<IElementType, Integer>> getPriorityList() {
+        final List<Pair<IElementType, Integer>> result = new ArrayList<Pair<IElementType, Integer>>();
+        final List<List<IElementType>> itemsByPriority = new ArrayList<List<IElementType>>();
+
+        itemsByPriority.add(ContainerUtil.list(ATX_1, ATX_2, ATX_3, ATX_4, ATX_5, ATX_6));
+
+        for (int i = 0; i < itemsByPriority.size(); ++i) {
+            final List<IElementType> types = itemsByPriority.get(i);
+            for (IElementType type : types) {
+                result.add(Pair.create(type, i + 1));
+            }
+        }
+
+        return result;
     }
 
     @NotNull @Override public MarkerBlock[] createNewMarkerBlocks(@NotNull IElementType tokenType, @NotNull PsiBuilder builder, @NotNull MarkerProcessor markerProcessor) {
@@ -63,7 +77,7 @@ public class CommonMarkMarkerProcessor extends FixedPriorityListMarkerProcessor 
         final MarkdownConstraints newConstraints = markerProcessor.getCurrentConstraints().addModifierIfNeeded(tokenType, builder);
 
         if (MarkdownParserUtil.getIndentBeforeRawToken(builder, 0) >= newConstraints.getIndent() + 4
-                && !hasParagraphBlock(markerProcessor)) {
+            && !hasParagraphBlock(markerProcessor)) {
             result.add(new CodeBlockMarkerBlock(newConstraints, builder.mark()));
         }
         else if (tokenType == MarkdownTokenTypes.BLOCK_QUOTE) {
@@ -80,22 +94,26 @@ public class CommonMarkMarkerProcessor extends FixedPriorityListMarkerProcessor 
                 result.add(new ListItemMarkerBlock(newConstraints, builder.mark()));
             }
         }
-        else if (tokenType != MarkdownTokenTypes.EOL) {
-            if (!hasParagraphBlock(markerProcessor)) {
-                final ParagraphMarkerBlock paragraphBlock = new ParagraphMarkerBlock(newConstraints, builder.mark());
-                result.add(paragraphBlock);
+        else if (tokenType == MarkdownTokenTypes.ATX_HEADER && !hasParagraphBlock(markerProcessor)) {
+            final String tokenText = builder.getTokenText();
+            assert tokenText != null : "type is not null but text is!";
+            result.add(new AtxHeaderMarkerBlock(newConstraints, builder.mark(), tokenText.length()));
+        }
+        else if (tokenType != MarkdownTokenTypes.EOL && !hasParagraphBlock(markerProcessor)) {
+            final ParagraphMarkerBlock paragraphBlock = new ParagraphMarkerBlock(newConstraints, builder.mark());
+            result.add(paragraphBlock);
 
-                if (isAtLineStart(builder)) {
-                    result.add(new SetextHeaderMarkerBlock(newConstraints, builder.mark()));
-                }
-
+            if (isAtLineStart(builder)) {
+                result.add(new SetextHeaderMarkerBlock(newConstraints, builder.mark()));
             }
+
         }
 
         return result.toArray(new MarkerBlock[result.size()]);
     }
 
 
+    @Contract(pure=true)
     private static boolean hasParagraphBlock(@NotNull MarkerProcessor markerProcessor) {
         return ContainerUtil.findInstance(markerProcessor.getMarkersStack(), ParagraphMarkerBlock.class) != null;
     }

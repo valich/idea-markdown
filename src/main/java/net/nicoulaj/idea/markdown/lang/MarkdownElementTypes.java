@@ -45,4 +45,13 @@ public interface MarkdownElementTypes {
 
     IElementType SETEXT_2 = new MarkdownElementType("SETEXT_2");
 
+    IElementType ATX_1 = new MarkdownElementType("ATX_1");
+    IElementType ATX_2 = new MarkdownElementType("ATX_2");
+    IElementType ATX_3 = new MarkdownElementType("ATX_3");
+    IElementType ATX_4 = new MarkdownElementType("ATX_4");
+    IElementType ATX_5 = new MarkdownElementType("ATX_5");
+    IElementType ATX_6 = new MarkdownElementType("ATX_6");
+
+
+
 }
