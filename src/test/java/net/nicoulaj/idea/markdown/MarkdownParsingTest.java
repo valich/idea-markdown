@@ -20,7 +20,6 @@
  */
 package net.nicoulaj.idea.markdown;
 
-import com.intellij.lang.ParserDefinition;
 import com.intellij.testFramework.ParsingTestCase;
 import net.nicoulaj.idea.markdown.lang.parser.MarkdownParserDefinition;
 
