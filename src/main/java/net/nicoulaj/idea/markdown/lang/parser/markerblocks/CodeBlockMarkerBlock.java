@@ -34,6 +34,10 @@ public class CodeBlockMarkerBlock extends MarkerBlockImpl {
         super(myConstraints, marker);
     }
 
+    @NotNull @Override protected ClosingAction getDefaultAction() {
+        return ClosingAction.DONE;
+    }
+
     @NotNull @Override protected ProcessingResult doProcessToken(@NotNull IElementType tokenType, @NotNull PsiBuilder builder, @NotNull MarkdownConstraints currentConstraints) {
         // Eat everything if we're on code line
         if (tokenType != MarkdownTokenTypes.EOL) {
@@ -48,7 +52,7 @@ public class CodeBlockMarkerBlock extends MarkerBlockImpl {
             final MarkdownConstraints nextLineConstraints = MarkdownConstraints.fromBase(builder, 1, myConstraints);
             // kinda equals
             if (!(nextLineConstraints.upstreamWith(myConstraints) && nextLineConstraints.extendsPrev(myConstraints))) {
-                return new ProcessingResult(ClosingAction.DROP, ClosingAction.DONE, EventAction.PROPAGATE);
+                return ProcessingResult.DEFAULT;
             }
 
             afterEol = builder.rawLookup(MarkdownParserUtil.getFirstNextLineNonBlockquoteRawIndex(builder));
@@ -63,7 +67,7 @@ public class CodeBlockMarkerBlock extends MarkerBlockImpl {
 
         final int indent = builder.rawTokenTypeStart(nonWhitespaceOffset) - builder.rawTokenTypeStart(1);
         if (indent < myConstraints.getIndent() + 4) {
-            return new ProcessingResult(ClosingAction.DROP, ClosingAction.DONE, EventAction.PROPAGATE);
+            return ProcessingResult.DEFAULT;
         } else {
             return ProcessingResult.CANCEL;
         }

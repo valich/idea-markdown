@@ -69,18 +69,18 @@ public abstract class MarkerBlockImpl implements MarkerBlock {
     }
 
     @Override public boolean acceptAction(@NotNull ClosingAction action) {
-        if (action == ClosingAction.NOTHING) {
-            return false;
+        if (action == ClosingAction.DEFAULT) {
+            action = getDefaultAction();
         }
 
-        if (action == ClosingAction.DONE) {
-            getMarker().done(getDefaultNodeType());
-        }
-        else if (action == ClosingAction.DROP) {
-            getMarker().drop();
-        }
-        return true;
+        action.doAction(getMarker(), getDefaultNodeType());
+
+        return action != ClosingAction.NOTHING;
+
     }
+
+    @NotNull
+    protected abstract ClosingAction getDefaultAction();
 
     @NotNull
     protected abstract ProcessingResult doProcessToken(@NotNull IElementType tokenType, @NotNull PsiBuilder builder, @NotNull MarkdownConstraints currentConstraints);

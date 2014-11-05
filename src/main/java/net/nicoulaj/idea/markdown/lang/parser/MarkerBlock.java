@@ -22,7 +22,6 @@ package net.nicoulaj.idea.markdown.lang.parser;
 
 import com.intellij.lang.PsiBuilder;
 import com.intellij.psi.tree.IElementType;
-import com.intellij.psi.tree.TokenSet;
 import org.jetbrains.annotations.NotNull;
 
 public interface MarkerBlock {
@@ -50,6 +49,11 @@ public interface MarkerBlock {
                 marker.drop();
             }
         },
+        DEFAULT {
+            @Override public void doAction(@NotNull PsiBuilder.Marker marker, @NotNull IElementType type) {
+                marker.drop();
+            }
+        },
         NOTHING {
             @Override public void doAction(@NotNull PsiBuilder.Marker marker, @NotNull IElementType type) {
             }
@@ -66,15 +70,35 @@ public interface MarkerBlock {
     public static class ProcessingResult {
         public static final ProcessingResult PASS = new ProcessingResult(ClosingAction.NOTHING, ClosingAction.NOTHING, EventAction.PROPAGATE);
         public static final ProcessingResult CANCEL = new ProcessingResult(ClosingAction.NOTHING, ClosingAction.NOTHING, EventAction.CANCEL);
+        public static final ProcessingResult DEFAULT = new ProcessingResult(ClosingAction.DEFAULT, ClosingAction.DONE, EventAction.PROPAGATE);
 
         public final ClosingAction childrenAction;
         public final ClosingAction selfAction;
         public final EventAction eventAction;
 
+        private final boolean isPostponed;
+
         public ProcessingResult(@NotNull ClosingAction childrenAction, @NotNull ClosingAction selfAction, @NotNull EventAction eventAction) {
+            this(childrenAction, selfAction, eventAction, false);
+        }
+
+        private ProcessingResult(@NotNull ClosingAction childrenAction, @NotNull ClosingAction selfAction, @NotNull EventAction eventAction, boolean isPostponed) {
             this.childrenAction = childrenAction;
             this.selfAction = selfAction;
             this.eventAction = eventAction;
+            this.isPostponed = isPostponed;
+        }
+
+        public boolean isPostponed() {
+            return isPostponed;
+        }
+
+        public ProcessingResult postpone() {
+            if (isPostponed) {
+                return this;
+            }
+
+            return new ProcessingResult(childrenAction, selfAction, eventAction, true);
         }
     }
 

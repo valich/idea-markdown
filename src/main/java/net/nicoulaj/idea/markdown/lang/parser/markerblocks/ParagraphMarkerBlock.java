@@ -23,6 +23,7 @@ package net.nicoulaj.idea.markdown.lang.parser.markerblocks;
 import com.intellij.lang.PsiBuilder;
 import com.intellij.psi.tree.IElementType;
 import net.nicoulaj.idea.markdown.lang.MarkdownElementTypes;
+import net.nicoulaj.idea.markdown.lang.MarkdownTokenTypeSets;
 import net.nicoulaj.idea.markdown.lang.MarkdownTokenTypes;
 import net.nicoulaj.idea.markdown.lang.parser.MarkdownConstraints;
 import net.nicoulaj.idea.markdown.lang.parser.MarkdownParserUtil;
@@ -34,20 +35,28 @@ public class ParagraphMarkerBlock extends MarkerBlockImpl {
         super(myConstraints, marker, MarkdownTokenTypes.EOL);
     }
 
+    @NotNull @Override protected ClosingAction getDefaultAction() {
+        return ClosingAction.DONE;
+    }
+
     @NotNull @Override protected ProcessingResult doProcessToken(@NotNull IElementType tokenType, @NotNull PsiBuilder builder, @NotNull MarkdownConstraints currentConstraints) {
         LOG.assertTrue(tokenType == MarkdownTokenTypes.EOL);
 
         if (MarkdownParserUtil.calcNumberOfConsequentEols(builder) >= 2) {
-            return new ProcessingResult(ClosingAction.DROP, ClosingAction.DONE, EventAction.PROPAGATE);
+            return ProcessingResult.DEFAULT;
         }
 
         IElementType afterEol = builder.lookAhead(1);
         if (afterEol == MarkdownTokenTypes.BLOCK_QUOTE) {
             if (!MarkdownConstraints.fromBase(builder, 1, myConstraints).upstreamWith(myConstraints)) {
-                return new ProcessingResult(ClosingAction.DROP, ClosingAction.DONE, EventAction.PROPAGATE);
+                return ProcessingResult.DEFAULT;
             }
 
             afterEol = builder.rawLookup(MarkdownParserUtil.getFirstNextLineNonBlockquoteRawIndex(builder));
+        }
+
+        if (MarkdownTokenTypeSets.SETEXT.contains(afterEol)) {
+            return new ProcessingResult(ClosingAction.NOTHING, ClosingAction.DROP, EventAction.PROPAGATE);
         }
 
         // Something breaks paragraph
@@ -58,7 +67,7 @@ public class ParagraphMarkerBlock extends MarkerBlockImpl {
             || afterEol == MarkdownTokenTypes.LIST_NUMBER
             || afterEol == MarkdownTokenTypes.ATX_HEADER
             || afterEol == MarkdownTokenTypes.BLOCK_QUOTE) {
-            return new ProcessingResult(ClosingAction.DROP, ClosingAction.DONE, EventAction.PROPAGATE);
+            return ProcessingResult.DEFAULT;
         }
 
         return ProcessingResult.CANCEL;

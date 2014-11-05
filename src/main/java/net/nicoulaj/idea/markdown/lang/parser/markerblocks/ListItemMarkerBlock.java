@@ -34,19 +34,23 @@ public class ListItemMarkerBlock extends MarkerBlockImpl {
         super(myConstraints, marker, MarkdownTokenTypes.EOL);
     }
 
+    @NotNull @Override protected ClosingAction getDefaultAction() {
+        return ClosingAction.DONE;
+    }
+
     @NotNull @Override protected ProcessingResult doProcessToken(@NotNull IElementType tokenType, @NotNull PsiBuilder builder, @NotNull MarkdownConstraints currentConstraints) {
         LOG.assertTrue(tokenType == MarkdownTokenTypes.EOL);
 
         final int eolN = MarkdownParserUtil.calcNumberOfConsequentEols(builder);
         if (eolN >= 3) {
-            return new ProcessingResult(ClosingAction.DROP, ClosingAction.DONE, EventAction.PROPAGATE);
+            return ProcessingResult.DEFAULT;
         }
 
         final int eolIndex = MarkdownParserUtil.getFirstNonWhitespaceLineEolRawIndex(builder);
         final MarkdownConstraints nextLineConstraints = MarkdownConstraints.fromBase(builder, eolIndex + 1, myConstraints);
 
         if (!nextLineConstraints.extendsPrev(myConstraints)) {
-            return new ProcessingResult(ClosingAction.DROP, ClosingAction.DONE, EventAction.PROPAGATE);
+            return ProcessingResult.DEFAULT;
         }
 
         return ProcessingResult.CANCEL;

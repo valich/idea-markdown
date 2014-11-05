@@ -29,6 +29,7 @@ import com.intellij.psi.tree.TokenSet;
  * @since 0.1
  */
 public interface MarkdownTokenTypeSets extends MarkdownTokenTypes {
+    TokenSet SETEXT = TokenSet.create(SETEXT_1, SETEXT_2);
 
 //    /** Plain text token type set. */
 //    TokenSet TEXT_SET = TokenSet.create(TEXT);

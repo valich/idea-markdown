@@ -41,4 +41,8 @@ public interface MarkdownElementTypes {
 
     IElementType STRONG = new MarkdownElementType("STRONG");
 
+    IElementType SETEXT_1 = new MarkdownElementType("SETEXT_1");
+
+    IElementType SETEXT_2 = new MarkdownElementType("SETEXT_2");
+
 }

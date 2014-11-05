@@ -30,6 +30,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 public abstract class MarkerProcessor {
 
@@ -39,6 +41,9 @@ public abstract class MarkerProcessor {
 
     @NotNull
     private final List<MarkerBlock> markersStack = new ArrayList<MarkerBlock>();
+
+    @NotNull
+    private final TreeMap<Integer, MarkerBlock.ProcessingResult> postponedActions = ContainerUtil.newTreeMap();
 
     @Nullable
     private List<Integer> cachedPermutation = null;
@@ -71,6 +76,8 @@ public abstract class MarkerProcessor {
     }
 
     public void processToken(@NotNull IElementType tokenType, @NotNull PsiBuilder builder) {
+        processPostponedActions();
+
         final boolean someoneHasCancelledEvent = processMarkers(tokenType, builder);
         if (!someoneHasCancelledEvent) {
             final MarkerBlock[] newMarkerBlocks = createNewMarkerBlocks(tokenType, builder, this);
@@ -89,15 +96,23 @@ public abstract class MarkerProcessor {
         }
     }
 
+    private void processPostponedActions() {
+        while (!postponedActions.isEmpty()) {
+            final Map.Entry<Integer, MarkerBlock.ProcessingResult> lastEntry = postponedActions.pollLastEntry();
+
+            final Integer stackIndex = lastEntry.getKey();
+            applyProcessingResult(stackIndex, markersStack.get(stackIndex), lastEntry.getValue());
+        }
+    }
+
 
     public void flushMarkers() {
-        closeChildren(-1, MarkerBlock.ClosingAction.DONE);
+        closeChildren(-1, MarkerBlock.ClosingAction.DEFAULT);
     }
 
     private MarkdownConstraints passDuplicatingTokensAndGetCurrentConstraints(@NotNull PsiBuilder builder) {
         LOG.assertTrue(builder.getTokenType() == MarkdownTokenTypes.EOL);
 
-        final int lineStartOffset = builder.rawTokenTypeStart(1);
         MarkdownConstraints constraints = startConstraints;
         int toSkip = 0;
 
@@ -152,15 +167,15 @@ public abstract class MarkerProcessor {
                 final MarkerBlock markerBlock = markersStack.get(index);
                 final MarkerBlock.ProcessingResult processingResult = markerBlock.processToken(tokenType, builder, topBlockConstraints);
 
-                if (processingResult == MarkerBlock.ProcessingResult.PASS) {
-                    continue;
+                if (processingResult.isPostponed()) {
+                    postponedActions.put(index, processingResult);
                 }
+                else {
+                    if (processingResult == MarkerBlock.ProcessingResult.PASS) {
+                        continue;
+                    }
 
-                closeChildren(index, processingResult.childrenAction);
-
-                // process self
-                if (markerBlock.acceptAction(processingResult.selfAction)) {
-                    markersStack.remove((int) index);
+                    applyProcessingResult(index, markerBlock, processingResult);
                 }
 
                 if (processingResult.eventAction == MarkerBlock.EventAction.CANCEL) {
@@ -183,9 +198,23 @@ public abstract class MarkerProcessor {
 
     }
 
+    private void applyProcessingResult(Integer index, MarkerBlock markerBlock, MarkerBlock.ProcessingResult processingResult) {
+        closeChildren(index, processingResult.childrenAction);
+
+        // process self
+        if (markerBlock.acceptAction(processingResult.selfAction)) {
+            markersStack.remove((int) index);
+        }
+    }
+
     private void closeChildren(int index, @NotNull MarkerBlock.ClosingAction childrenAction) {
         if (childrenAction != MarkerBlock.ClosingAction.NOTHING) {
             for (int latterIndex = markersStack.size() - 1; latterIndex > index; --latterIndex) {
+                if (postponedActions.containsKey(latterIndex)) {
+                    LOG.warn("Processing postponed marker block :(");
+                    postponedActions.remove(latterIndex);
+                }
+
                 final boolean result = markersStack.get(latterIndex).acceptAction(childrenAction);
                 assert result : "If closing action is not NOTHING, marker should be gone";
 

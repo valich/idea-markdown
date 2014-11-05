@@ -21,6 +21,7 @@
 package net.nicoulaj.idea.markdown.lang.dialects.commonmark;
 
 import com.intellij.lang.PsiBuilder;
+import com.intellij.psi.TokenType;
 import com.intellij.psi.tree.IElementType;
 import com.intellij.util.containers.ContainerUtil;
 import net.nicoulaj.idea.markdown.lang.MarkdownTokenTypes;
@@ -32,6 +33,7 @@ import net.nicoulaj.idea.markdown.lang.parser.MarkerProcessor;
 import net.nicoulaj.idea.markdown.lang.parser.markerblocks.*;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -50,43 +52,64 @@ public class CommonMarkMarkerProcessor extends FixedPriorityListMarkerProcessor 
         if (tokenType == MarkdownTokenTypes.EOL) {
             return NO_BLOCKS;
         }
+        if (tokenType == MarkdownTokenTypes.HORIZONTAL_RULE
+            || tokenType == MarkdownTokenTypes.SETEXT_1
+            || tokenType == MarkdownTokenTypes.SETEXT_2) {
+            return NO_BLOCKS;
+        }
+
+        List<MarkerBlock> result = new ArrayList<MarkerBlock>(1);
 
         final MarkdownConstraints newConstraints = markerProcessor.getCurrentConstraints().addModifierIfNeeded(tokenType, builder);
 
         if (MarkdownParserUtil.getIndentBeforeRawToken(builder, 0) >= newConstraints.getIndent() + 4
                 && !hasParagraphBlock(markerProcessor)) {
-            return oneBlock(new CodeBlockMarkerBlock(newConstraints, builder.mark()));
+            result.add(new CodeBlockMarkerBlock(newConstraints, builder.mark()));
         }
-        if (tokenType == MarkdownTokenTypes.BLOCK_QUOTE) {
-            return oneBlock(new BlockQuoteMarkerBlock(newConstraints, builder.mark()));
+        else if (tokenType == MarkdownTokenTypes.BLOCK_QUOTE) {
+            result.add(new BlockQuoteMarkerBlock(newConstraints, builder.mark()));
         }
-        if (tokenType == MarkdownTokenTypes.LIST_NUMBER
+        else if (tokenType == MarkdownTokenTypes.LIST_NUMBER
             || tokenType == MarkdownTokenTypes.LIST_BULLET) {
             final MarkerBlock topBlock = ContainerUtil.getLastItem(markerProcessor.getMarkersStack());
             if (topBlock instanceof ListMarkerBlock) {
-                return oneBlock(new ListItemMarkerBlock(newConstraints, builder.mark()));
+                result.add(new ListItemMarkerBlock(newConstraints, builder.mark()));
             }
             else {
-                return new MarkerBlock[]{new ListMarkerBlock(newConstraints, builder.mark(), tokenType),
-                                         new ListItemMarkerBlock(newConstraints, builder.mark())};
+                result.add(new ListMarkerBlock(newConstraints, builder.mark(), tokenType));
+                result.add(new ListItemMarkerBlock(newConstraints, builder.mark()));
             }
         }
-        if (tokenType != MarkdownTokenTypes.EOL) {
-            if (hasParagraphBlock(markerProcessor)) {
-                return NO_BLOCKS;
+        else if (tokenType != MarkdownTokenTypes.EOL) {
+            if (!hasParagraphBlock(markerProcessor)) {
+                final ParagraphMarkerBlock paragraphBlock = new ParagraphMarkerBlock(newConstraints, builder.mark());
+                result.add(paragraphBlock);
+
+                if (isAtLineStart(builder)) {
+                    result.add(new SetextHeaderMarkerBlock(newConstraints, builder.mark()));
+                }
+
             }
-            return oneBlock(new ParagraphMarkerBlock(newConstraints, builder.mark()));
         }
 
-        return NO_BLOCKS;
+        return result.toArray(new MarkerBlock[result.size()]);
     }
 
-    private static boolean hasParagraphBlock(MarkerProcessor markerProcessor) {
+
+    private static boolean hasParagraphBlock(@NotNull MarkerProcessor markerProcessor) {
         return ContainerUtil.findInstance(markerProcessor.getMarkersStack(), ParagraphMarkerBlock.class) != null;
     }
 
-    @NotNull
-    private static MarkerBlock[] oneBlock(MarkerBlock item) {
-        return new MarkerBlock[]{item};
+    private static boolean isAtLineStart(@NotNull PsiBuilder builder) {
+        for (int index = -1;; --index) {
+            final IElementType type = builder.rawLookup(index);
+            if (type == null || type == MarkdownTokenTypes.EOL) {
+                return true;
+            }
+            if (type != TokenType.WHITE_SPACE) {
+                return false;
+            }
+        }
     }
+
 }

@@ -33,13 +33,17 @@ public class BlockQuoteMarkerBlock extends MarkerBlockImpl {
         super(myConstraints, marker, MarkdownTokenTypes.EOL);
     }
 
+    @NotNull @Override protected ClosingAction getDefaultAction() {
+        return ClosingAction.DONE;
+    }
+
     @NotNull @Override protected ProcessingResult doProcessToken(@NotNull IElementType tokenType, @NotNull PsiBuilder builder, @NotNull MarkdownConstraints currentConstraints) {
         LOG.assertTrue(tokenType == MarkdownTokenTypes.EOL);
 
         final MarkdownConstraints nextLineConstraints = MarkdownConstraints.fromBase(builder, 1, myConstraints);
         // That means nextLineConstraints are "shorter" so our blockquote char is absent
         if (!nextLineConstraints.extendsPrev(myConstraints)) {
-            return new ProcessingResult(ClosingAction.DROP, ClosingAction.DONE, EventAction.PROPAGATE);
+            return ProcessingResult.DEFAULT;
         }
 
         return ProcessingResult.PASS;
