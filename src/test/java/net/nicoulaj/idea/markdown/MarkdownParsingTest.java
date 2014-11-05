@@ -52,10 +52,6 @@ public class MarkdownParsingTest extends ParsingTestCase {
         defaultTest();
     }
 
-    public void testSmall() {
-        defaultTest();
-    }
-
     @Override protected String getTestDataPath() {
         return "src/test/data/parser";
     }
