@@ -35,6 +35,8 @@ public interface MarkdownElementTypes {
 
     IElementType CODE_BLOCK = new MarkdownElementType("CODE_BLOCK");
 
+    IElementType CODE_SPAN = new MarkdownElementType("CODE_SPAN");
+
     IElementType PARAGRAPH = new MarkdownElementType("PARAGRAPH");
 
     IElementType EMPH = new MarkdownElementType("EMPH");
