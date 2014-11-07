@@ -45,9 +45,6 @@ id sem consectetuer libero luctus adipiscing.
 >     foo
     bar
 
-> ```
-foo
-```
 
 foo
 > bar
@@ -59,3 +56,8 @@ foo
 >     code
 
 >    not code
+
+
+> ```
+foo
+```

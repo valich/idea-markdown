@@ -163,23 +163,23 @@ import java.util.Stack;
     return yycolumn >= currentIndent + 2 * blockQuotes.level + 4;
   }
 
-  private void updateParagraphInfo() {
+  private void updateParagraphInfoOnNewline() {
     if (paragraph.currentLineIsNotBlank) {
       paragraph.lineCount++;
       paragraph.currentLineIsNotBlank = false;
     }
     else {
       endParagraph();
+      blockQuotes.resetLevel();
     }
   }
 
   private void endParagraph() {
     paragraph.lineCount = 0;
-    blockQuotes.resetLevel();
   }
 
   private void processEol() {
-    updateParagraphInfo();
+    updateParagraphInfoOnNewline();
 
     int newlinePos = 1;
     while (newlinePos < yylength() && yycharat(newlinePos) != '\n') {
@@ -681,6 +681,7 @@ LINK_ID = [^\n\[]*
     if (newLevel < blockQuotes.level) {
       yypushback(yylength() - 1);
       processEol();
+      return Token.EOL;
     }
     else {
       codeFence.typeWasRead = true;
