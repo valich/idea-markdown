@@ -362,6 +362,7 @@ LINK_ID = [^\n\[]*
   }
 
   // Horizontal rule
+  // TODO solve the problem of $ and EOL (they do not match)
   ("*" ({WHITE_SPACE}* "*") ({WHITE_SPACE}* "*")+  | "-" ({WHITE_SPACE}* "-") ({WHITE_SPACE}* "-")+  | "___" "_"* ) {WHITE_SPACE}* $ {
     if (isFourIndent()) {
       resetState();
