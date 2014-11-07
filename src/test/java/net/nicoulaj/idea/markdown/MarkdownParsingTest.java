@@ -64,6 +64,10 @@ public class MarkdownParsingTest extends ParsingTestCase {
         defaultTest();
     }
 
+    public void testCodeFence() {
+        defaultTest();
+    }
+
     @Override protected String getTestDataPath() {
         return "src/test/data/parser";
     }

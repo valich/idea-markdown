@@ -101,6 +101,9 @@ public class CommonMarkMarkerProcessor extends FixedPriorityListMarkerProcessor 
             assert tokenText != null : "type is not null but text is!";
             result.add(new AtxHeaderMarkerBlock(newConstraints, builder.mark(), tokenText.length()));
         }
+        else if (tokenType == MarkdownTokenTypes.CODE_FENCE_START) {
+            result.add(new CodeFenceMarkerBlock(newConstraints, builder.mark()));
+        }
         else {
             if (tokenType != MarkdownTokenTypes.EOL && !hasParagraphBlock(markerProcessor)) {
                 final ParagraphMarkerBlock paragraphBlock = new ParagraphMarkerBlock(newConstraints, builder.mark());
