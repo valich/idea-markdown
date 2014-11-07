@@ -107,6 +107,8 @@ public abstract class MarkerProcessor {
 
 
     public void flushMarkers() {
+        processPostponedActions();
+
         closeChildren(-1, MarkerBlock.ClosingAction.DEFAULT);
     }
 

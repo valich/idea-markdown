@@ -90,7 +90,6 @@ public interface MarkdownTokenTypes extends TokenType {
     IElementType BACKTICK = new MarkdownElementType("BACKTICK");
 
     IElementType TAG_NAME = new MarkdownElementType("TAG_NAME");
-    IElementType STRONG = new MarkdownElementType("STRONG");
     IElementType LIST_BULLET = new MarkdownElementType("LIST_BULLET");
     IElementType URL = new MarkdownElementType("URL");
     IElementType HORIZONTAL_RULE = new MarkdownElementType("HORIZONTAL_RULE");

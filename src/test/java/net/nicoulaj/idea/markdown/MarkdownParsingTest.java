@@ -60,6 +60,10 @@ public class MarkdownParsingTest extends ParsingTestCase {
         defaultTest();
     }
 
+    public void testEmphStrong() {
+        defaultTest();
+    }
+
     @Override protected String getTestDataPath() {
         return "src/test/data/parser";
     }

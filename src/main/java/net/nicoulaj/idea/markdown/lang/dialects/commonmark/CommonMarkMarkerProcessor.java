@@ -34,6 +34,7 @@ import net.nicoulaj.idea.markdown.lang.parser.MarkerProcessor;
 import net.nicoulaj.idea.markdown.lang.parser.markerblocks.*;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -100,14 +101,24 @@ public class CommonMarkMarkerProcessor extends FixedPriorityListMarkerProcessor 
             assert tokenText != null : "type is not null but text is!";
             result.add(new AtxHeaderMarkerBlock(newConstraints, builder.mark(), tokenText.length()));
         }
-        else if (tokenType != MarkdownTokenTypes.EOL && !hasParagraphBlock(markerProcessor)) {
-            final ParagraphMarkerBlock paragraphBlock = new ParagraphMarkerBlock(newConstraints, builder.mark());
-            result.add(paragraphBlock);
+        else {
+            if (tokenType != MarkdownTokenTypes.EOL && !hasParagraphBlock(markerProcessor)) {
+                final ParagraphMarkerBlock paragraphBlock = new ParagraphMarkerBlock(newConstraints, builder.mark());
+                result.add(paragraphBlock);
 
-            if (isAtLineStart(builder)) {
-                result.add(new SetextHeaderMarkerBlock(newConstraints, builder.mark()));
+                // Inlines here
+                if (isAtLineStart(builder)) {
+                    result.add(new SetextHeaderMarkerBlock(newConstraints, builder.mark()));
+                }
             }
 
+            if (tokenType == MarkdownTokenTypes.EMPH) {
+                final MarkerBlock lastBlock = getLastBlock(markerProcessor);
+                final EmphStrongMarkerBlock prevBlock = lastBlock instanceof EmphStrongMarkerBlock
+                                                        ? ((EmphStrongMarkerBlock) lastBlock)
+                                                        : null;
+                result.add(new EmphStrongMarkerBlock(newConstraints, builder, prevBlock));
+            }
         }
 
         return result.toArray(new MarkerBlock[result.size()]);
@@ -117,6 +128,11 @@ public class CommonMarkMarkerProcessor extends FixedPriorityListMarkerProcessor 
     @Contract(pure=true)
     private static boolean hasParagraphBlock(@NotNull MarkerProcessor markerProcessor) {
         return ContainerUtil.findInstance(markerProcessor.getMarkersStack(), ParagraphMarkerBlock.class) != null;
+    }
+
+    @Nullable
+    private static MarkerBlock getLastBlock(@NotNull MarkerProcessor markerProcessor) {
+        return ContainerUtil.getLastItem(markerProcessor.getMarkersStack());
     }
 
     private static boolean isAtLineStart(@NotNull PsiBuilder builder) {
