@@ -24,12 +24,13 @@ import com.intellij.lang.PsiBuilder;
 import com.intellij.psi.tree.IElementType;
 import net.nicoulaj.idea.markdown.lang.MarkdownElementTypes;
 import net.nicoulaj.idea.markdown.lang.MarkdownTokenTypes;
+import net.nicoulaj.idea.markdown.lang.parser.InlineHangableMarkerBlock;
+import net.nicoulaj.idea.markdown.lang.parser.InlineMarkerManager;
 import net.nicoulaj.idea.markdown.lang.parser.MarkdownConstraints;
-import net.nicoulaj.idea.markdown.lang.parser.MarkerBlockImpl;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class EmphStrongMarkerBlock extends MarkerBlockImpl {
+public class EmphStrongMarkerBlock extends InlineHangableMarkerBlock {
 
     protected static final char ITALIC = '_';
 
@@ -48,8 +49,9 @@ public class EmphStrongMarkerBlock extends MarkerBlockImpl {
 
     public EmphStrongMarkerBlock(@NotNull MarkdownConstraints myConstraints,
                                  @NotNull PsiBuilder builder,
+                                 @NotNull InlineMarkerManager markerManager,
                                  @Nullable EmphStrongMarkerBlock prevEmph) {
-        super(myConstraints, builder.mark(), MarkdownTokenTypes.EMPH);
+        super(myConstraints, builder, MarkdownTokenTypes.EMPH, markerManager);
 
         final String tokenText = builder.getTokenText();
         assert tokenText != null : "type is not null so text is also?";

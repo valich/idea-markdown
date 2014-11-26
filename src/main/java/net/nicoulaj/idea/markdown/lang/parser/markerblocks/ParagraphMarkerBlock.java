@@ -25,14 +25,18 @@ import com.intellij.psi.tree.IElementType;
 import net.nicoulaj.idea.markdown.lang.MarkdownElementTypes;
 import net.nicoulaj.idea.markdown.lang.MarkdownTokenTypeSets;
 import net.nicoulaj.idea.markdown.lang.MarkdownTokenTypes;
-import net.nicoulaj.idea.markdown.lang.parser.MarkdownConstraints;
-import net.nicoulaj.idea.markdown.lang.parser.MarkdownParserUtil;
-import net.nicoulaj.idea.markdown.lang.parser.MarkerBlockImpl;
+import net.nicoulaj.idea.markdown.lang.parser.*;
 import org.jetbrains.annotations.NotNull;
 
-public class ParagraphMarkerBlock extends MarkerBlockImpl {
-    public ParagraphMarkerBlock(@NotNull MarkdownConstraints myConstraints, @NotNull PsiBuilder.Marker marker) {
-        super(myConstraints, marker, MarkdownTokenTypes.EOL);
+public class ParagraphMarkerBlock extends MarkerBlockImpl implements InlineStructureHolder {
+    @NotNull
+    private final PsiBuilder builder;
+
+    private InlineMarkerManager myManager = null;
+
+    public ParagraphMarkerBlock(@NotNull MarkdownConstraints myConstraints, @NotNull PsiBuilder builder) {
+        super(myConstraints, builder.mark(), MarkdownTokenTypes.EOL);
+        this.builder = builder;
     }
 
     @NotNull @Override protected ClosingAction getDefaultAction() {
@@ -74,8 +78,28 @@ public class ParagraphMarkerBlock extends MarkerBlockImpl {
         return ProcessingResult.CANCEL;
     }
 
+    @Override public boolean acceptAction(@NotNull ClosingAction action) {
+        if (action != ClosingAction.NOTHING && myManager != null) {
+            if (action == ClosingAction.DONE || action == ClosingAction.DEFAULT) {
+                myManager.flushAllClosedMarkers();
+            }
+            else {
+                assert false;
+            }
+        }
+
+        return super.acceptAction(action);
+    }
+
     @NotNull @Override public IElementType getDefaultNodeType() {
         return MarkdownElementTypes.PARAGRAPH;
     }
 
+    @NotNull
+    @Override public InlineMarkerManager getInlineMarkerManager() {
+        if (myManager == null) {
+            myManager = new InlineMarkerManager(builder);
+        }
+        return myManager;
+    }
 }

@@ -79,7 +79,7 @@ public class CommonMarkMarkerProcessor extends FixedPriorityListMarkerProcessor 
         final MarkdownConstraints newConstraints = markerProcessor.getCurrentConstraints().addModifierIfNeeded(tokenType, builder);
 
         if (MarkdownParserUtil.getIndentBeforeRawToken(builder, 0) >= newConstraints.getIndent() + 4
-            && !hasParagraphBlock(markerProcessor)) {
+            && getParagraphBlock(markerProcessor) == null) {
             result.add(new CodeBlockMarkerBlock(newConstraints, builder.mark()));
         }
         else if (tokenType == MarkdownTokenTypes.BLOCK_QUOTE) {
@@ -96,7 +96,7 @@ public class CommonMarkMarkerProcessor extends FixedPriorityListMarkerProcessor 
                 result.add(new ListItemMarkerBlock(newConstraints, builder.mark()));
             }
         }
-        else if (tokenType == MarkdownTokenTypes.ATX_HEADER && !hasParagraphBlock(markerProcessor)) {
+        else if (tokenType == MarkdownTokenTypes.ATX_HEADER && getParagraphBlock(markerProcessor) == null) {
             final String tokenText = builder.getTokenText();
             assert tokenText != null : "type is not null but text is!";
             result.add(new AtxHeaderMarkerBlock(newConstraints, builder.mark(), tokenText.length()));
@@ -105,9 +105,11 @@ public class CommonMarkMarkerProcessor extends FixedPriorityListMarkerProcessor 
             result.add(new CodeFenceMarkerBlock(newConstraints, builder.mark()));
         }
         else {
-            if (tokenType != MarkdownTokenTypes.EOL && !hasParagraphBlock(markerProcessor)) {
-                final ParagraphMarkerBlock paragraphBlock = new ParagraphMarkerBlock(newConstraints, builder.mark());
-                result.add(paragraphBlock);
+            ParagraphMarkerBlock paragraph = getParagraphBlock(markerProcessor);
+
+            if (tokenType != MarkdownTokenTypes.EOL && paragraph == null) {
+                paragraph = new ParagraphMarkerBlock(newConstraints, builder);
+                result.add(paragraph);
 
                 // Inlines here
                 if (isAtLineStart(builder)) {
@@ -115,12 +117,16 @@ public class CommonMarkMarkerProcessor extends FixedPriorityListMarkerProcessor 
                 }
             }
 
+            assert (tokenType == MarkdownTokenTypes.EOL || paragraph != null);
             if (tokenType == MarkdownTokenTypes.EMPH) {
                 final MarkerBlock lastBlock = getLastBlock(markerProcessor);
                 final EmphStrongMarkerBlock prevBlock = lastBlock instanceof EmphStrongMarkerBlock
                                                         ? ((EmphStrongMarkerBlock) lastBlock)
                                                         : null;
-                result.add(new EmphStrongMarkerBlock(newConstraints, builder, prevBlock));
+                result.add(new EmphStrongMarkerBlock(newConstraints,
+                                                     builder,
+                                                     paragraph.getInlineMarkerManager(),
+                                                     prevBlock));
             }
         }
 
@@ -129,8 +135,9 @@ public class CommonMarkMarkerProcessor extends FixedPriorityListMarkerProcessor 
 
 
     @Contract(pure=true)
-    private static boolean hasParagraphBlock(@NotNull MarkerProcessor markerProcessor) {
-        return ContainerUtil.findInstance(markerProcessor.getMarkersStack(), ParagraphMarkerBlock.class) != null;
+    @Nullable
+    private static ParagraphMarkerBlock getParagraphBlock(@NotNull MarkerProcessor markerProcessor) {
+        return ContainerUtil.findInstance(markerProcessor.getMarkersStack(), ParagraphMarkerBlock.class);
     }
 
     @Nullable

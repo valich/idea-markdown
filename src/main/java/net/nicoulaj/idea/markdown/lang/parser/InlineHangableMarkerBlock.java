@@ -26,40 +26,41 @@ import com.intellij.psi.tree.TokenSet;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public abstract class InlineHangableMarkerBlockImpl extends MarkerBlockImpl {
+public abstract class InlineHangableMarkerBlock extends MarkerBlockImpl {
 
     @NotNull
-    private final PsiBuilder builder;
+    private final InlineMarkerManager markerManager;
 
-    @Nullable
-    private PsiBuilder.Marker myPositionMarker = null;
-
-    public InlineHangableMarkerBlockImpl(@NotNull MarkdownConstraints myConstraints,
-                                         @NotNull PsiBuilder builder,
-                                         @Nullable TokenSet interestingTypes) {
+    public InlineHangableMarkerBlock(@NotNull MarkdownConstraints myConstraints,
+                                     @NotNull PsiBuilder builder,
+                                     @Nullable TokenSet interestingTypes, @NotNull InlineMarkerManager markerManager) {
         super(myConstraints, builder.mark(), interestingTypes);
-        this.builder = builder;
+        this.markerManager = markerManager;
+        markerManager.openMarkerBlock(this);
     }
 
-    public InlineHangableMarkerBlockImpl(@NotNull MarkdownConstraints myConstraints,
-                                         @NotNull PsiBuilder builder,
-                                         @NotNull IElementType interestingType) {
+    public InlineHangableMarkerBlock(@NotNull MarkdownConstraints myConstraints,
+                                     @NotNull PsiBuilder builder,
+                                     @NotNull IElementType interestingType,
+                                     @NotNull InlineMarkerManager markerManager) {
         super(myConstraints, builder.mark(), interestingType);
-        this.builder = builder;
+        this.markerManager = markerManager;
+        markerManager.openMarkerBlock(this);
     }
 
-    public InlineHangableMarkerBlockImpl(@NotNull MarkdownConstraints myConstraints,
-                                         @NotNull PsiBuilder builder) {
+    public InlineHangableMarkerBlock(@NotNull MarkdownConstraints myConstraints,
+                                     @NotNull PsiBuilder builder,
+                                     @NotNull InlineMarkerManager markerManager) {
         super(myConstraints, builder.mark());
-        this.builder = builder;
+        this.markerManager = markerManager;
+        markerManager.openMarkerBlock(this);
     }
 
     @Override public boolean acceptAction(@NotNull ClosingAction action) {
-        if (action == ClosingAction.DONE) {
-            myPositionMarker = builder.mark();
-            return false;
+        if (action == ClosingAction.DONE
+            || action == ClosingAction.DEFAULT && getDefaultAction() == ClosingAction.DONE) {
+            markerManager.doneMarker(this);
         }
-
-        return super.acceptAction(action);
+        return action != ClosingAction.NOTHING;
     }
 }
