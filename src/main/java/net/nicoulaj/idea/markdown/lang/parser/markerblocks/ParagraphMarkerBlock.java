@@ -84,7 +84,12 @@ public class ParagraphMarkerBlock extends MarkerBlockImpl implements InlineStruc
                 myManager.flushAllClosedMarkers();
             }
             else {
-                assert false;
+//                assert false;
+                // Actually, this practically means that a setext header is here,
+                // and inline structure should be closed and put into the tree
+                // anyway. So it's ok to flush markers in this way, too.
+                // TODO (to be fixed, of course)
+                myManager.flushAllClosedMarkers();
             }
         }
 

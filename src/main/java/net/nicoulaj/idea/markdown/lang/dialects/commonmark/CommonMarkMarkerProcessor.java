@@ -21,6 +21,7 @@
 package net.nicoulaj.idea.markdown.lang.dialects.commonmark;
 
 import com.intellij.lang.PsiBuilder;
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.util.Pair;
 import com.intellij.psi.TokenType;
 import com.intellij.psi.tree.IElementType;
@@ -43,6 +44,8 @@ import static net.nicoulaj.idea.markdown.lang.MarkdownElementTypes.*;
 
 
 public class CommonMarkMarkerProcessor extends FixedPriorityListMarkerProcessor {
+    private final static Logger LOG = Logger.getInstance(CommonMarkMarkerProcessor.class);
+
     public CommonMarkMarkerProcessor() {
         super(MarkdownConstraints.BASE);
     }
@@ -63,7 +66,7 @@ public class CommonMarkMarkerProcessor extends FixedPriorityListMarkerProcessor 
         return result;
     }
 
-    @NotNull @Override public MarkerBlock[] createNewMarkerBlocks(@NotNull IElementType tokenType, @NotNull PsiBuilder builder, @NotNull MarkerProcessor markerProcessor) {
+    @NotNull @Override public MarkerBlock[] createNewMarkerBlocks(@NotNull final IElementType tokenType, @NotNull PsiBuilder builder, @NotNull MarkerProcessor markerProcessor) {
         if (tokenType == MarkdownTokenTypes.EOL) {
             return NO_BLOCKS;
         }
@@ -98,7 +101,7 @@ public class CommonMarkMarkerProcessor extends FixedPriorityListMarkerProcessor 
         }
         else if (tokenType == MarkdownTokenTypes.ATX_HEADER && getParagraphBlock(markerProcessor) == null) {
             final String tokenText = builder.getTokenText();
-            assert tokenText != null : "type is not null but text is!";
+            LOG.assertTrue(tokenText != null, "type is not null but text is!");
             result.add(new AtxHeaderMarkerBlock(newConstraints, builder.mark(), tokenText.length()));
         }
         else if (tokenType == MarkdownTokenTypes.CODE_FENCE_START) {
@@ -106,6 +109,8 @@ public class CommonMarkMarkerProcessor extends FixedPriorityListMarkerProcessor 
         }
         else {
             ParagraphMarkerBlock paragraph = getParagraphBlock(markerProcessor);
+
+            LOG.assertTrue(tokenType != MarkdownTokenTypes.EOL);
 
             if (tokenType != MarkdownTokenTypes.EOL && paragraph == null) {
                 paragraph = new ParagraphMarkerBlock(newConstraints, builder);
@@ -117,7 +122,8 @@ public class CommonMarkMarkerProcessor extends FixedPriorityListMarkerProcessor 
                 }
             }
 
-            assert (tokenType == MarkdownTokenTypes.EOL || paragraph != null);
+            LOG.assertTrue(paragraph != null);
+
             if (tokenType == MarkdownTokenTypes.EMPH) {
                 final MarkerBlock lastBlock = getLastBlock(markerProcessor);
                 final EmphStrongMarkerBlock prevBlock = lastBlock instanceof EmphStrongMarkerBlock
@@ -127,6 +133,10 @@ public class CommonMarkMarkerProcessor extends FixedPriorityListMarkerProcessor 
                                                      builder,
                                                      paragraph.getInlineMarkerManager(),
                                                      prevBlock));
+            }
+            else if (tokenType == MarkdownTokenTypes.BACKTICK
+                    || tokenType == MarkdownTokenTypes.ESCAPED_BACKTICKS && builder.getTokenText().length() > 2) {
+                result.add(new CodeSpanMarkerBlock(newConstraints, builder, paragraph.getInlineMarkerManager()));
             }
         }
 

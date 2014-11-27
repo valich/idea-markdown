@@ -21,26 +21,45 @@
 package net.nicoulaj.idea.markdown.lang.parser.markerblocks;
 
 import com.intellij.lang.PsiBuilder;
+import com.intellij.openapi.util.Condition;
 import com.intellij.psi.tree.IElementType;
 import com.intellij.psi.tree.TokenSet;
 import net.nicoulaj.idea.markdown.lang.MarkdownElementTypes;
 import net.nicoulaj.idea.markdown.lang.MarkdownTokenTypes;
+import net.nicoulaj.idea.markdown.lang.parser.InlineHangableMarkerBlock;
+import net.nicoulaj.idea.markdown.lang.parser.InlineMarkerManager;
 import net.nicoulaj.idea.markdown.lang.parser.MarkdownConstraints;
-import net.nicoulaj.idea.markdown.lang.parser.MarkerBlockImpl;
 import org.jetbrains.annotations.NotNull;
 
-public class CodeSpanMarkerBlock extends MarkerBlockImpl {
+public class CodeSpanMarkerBlock extends InlineHangableMarkerBlock {
     private final int length;
 
-    public CodeSpanMarkerBlock(@NotNull MarkdownConstraints myConstraints, @NotNull PsiBuilder builder) {
-        super(myConstraints, builder.mark(), TokenSet.create(
-                MarkdownTokenTypes.BACKTICK, MarkdownTokenTypes.EMPH, MarkdownTokenTypes.INLINE_HTML,
-                MarkdownTokenTypes.AUTOLINK, MarkdownTokenTypes.EMAIL_AUTOLINK, MarkdownTokenTypes.LT
-        ));
+    public CodeSpanMarkerBlock(@NotNull MarkdownConstraints myConstraints,
+                               @NotNull PsiBuilder builder,
+                               @NotNull InlineMarkerManager markerManager) {
+        super(myConstraints, builder, TokenSet.create(
+                MarkdownTokenTypes.BACKTICK, MarkdownTokenTypes.ESCAPED_BACKTICKS //, MarkdownTokenTypes.EMPH, MarkdownTokenTypes.INLINE_HTML,
+//                MarkdownTokenTypes.AUTOLINK, MarkdownTokenTypes.EMAIL_AUTOLINK, MarkdownTokenTypes.LT
+        ), markerManager);
 
+
+        length = getLength(builder, true);
+    }
+
+    private int getLength(@NotNull PsiBuilder builder, boolean canEscape) {
         final String tokenText = builder.getTokenText();
         assert tokenText != null;
-        length = tokenText.length();
+
+        int toSubtract = 0;
+        if (builder.getTokenType() == MarkdownTokenTypes.ESCAPED_BACKTICKS) {
+            if (canEscape) {
+                toSubtract = 2;
+            } else {
+                toSubtract = 1;
+            }
+        }
+
+        return tokenText.length() - toSubtract;
     }
 
     @NotNull @Override protected ClosingAction getDefaultAction() {
@@ -51,20 +70,16 @@ public class CodeSpanMarkerBlock extends MarkerBlockImpl {
                                                                  @NotNull PsiBuilder builder,
                                                                  @NotNull
                                                                  MarkdownConstraints currentConstraints) {
-        if (tokenType == MarkdownTokenTypes.BACKTICK) {
-            final String tokenText = builder.getTokenText();
-            if (tokenText != null && tokenText.length() == length) {
-                return ProcessingResult.DEFAULT.postpone();
-            }
-            else {
-                return ProcessingResult.CANCEL;
-            }
-        }
-
-        if (tokenType == MarkdownTokenTypes.EMPH) {
+        if (getLength(builder, false) == length) {
+            markerManager.cancelMarkersInterlappingWith(this, new Condition<InlineHangableMarkerBlock>() {
+                @Override public boolean value(InlineHangableMarkerBlock markerBlock) {
+                    return markerBlock instanceof EmphStrongMarkerBlock;
+                }
+            });
+            return ProcessingResult.DEFAULT.postpone();
+        } else {
             return ProcessingResult.CANCEL;
         }
-        return ProcessingResult.PASS;
     }
 
     @NotNull @Override public IElementType getDefaultNodeType() {

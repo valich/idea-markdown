@@ -22,6 +22,7 @@ package net.nicoulaj.idea.markdown.lang.parser;
 
 import com.intellij.lang.PsiBuilder;
 import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.util.Condition;
 import com.intellij.openapi.util.TextRange;
 import com.intellij.util.containers.ContainerUtil;
 import org.jetbrains.annotations.NotNull;
@@ -53,13 +54,30 @@ public class InlineMarkerManager {
         markerInfo.endVirtually(builder);
     }
 
-    public void cancelMarkersInterlappingWith(int start, int end) {
+    public void cancelMarkersInterlappingWith(InlineHangableMarkerBlock closingBlock,
+                                              @NotNull Condition<? super InlineHangableMarkerBlock> shouldDelete) {
+        final MarkerInfo info = markers.get(closingBlock);
+        cancelMarkersInterlappingWith(info.getStart(), builder.getCurrentOffset(), shouldDelete);
+    }
+
+    public void cancelMarkersInterlappingWith(int start,
+                                              int end,
+                                              @NotNull Condition<? super InlineHangableMarkerBlock> shouldDelete) {
 
         TextRange range = TextRange.create(start, end);
 
         Set<InlineHangableMarkerBlock> toDelete = ContainerUtil.newHashSet();
         for (MarkerInfo info : markers.values()) {
             if (range.contains(info.getStart()) ^ range.containsOffset(info.getEnd())) {
+                if (!shouldDelete.value(info.getMarkerBlock())) {
+                    continue;
+                }
+
+                if (info.getEnd() != -1) {
+                    info.endMarker.drop();
+                }
+                info.getMarkerBlock().getMarker().drop();
+
                 toDelete.add(info.getMarkerBlock());
             }
         }

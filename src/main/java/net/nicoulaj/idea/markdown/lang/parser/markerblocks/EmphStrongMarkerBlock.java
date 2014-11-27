@@ -110,10 +110,10 @@ public class EmphStrongMarkerBlock extends InlineHangableMarkerBlock {
             assert neighborOfMyType != null;
             neighborOfMyType.setStrong();
 
-            return new ProcessingResult(ClosingAction.DEFAULT, ClosingAction.DROP, EventAction.CANCEL);
+            return new ProcessingResult(ClosingAction.NOTHING, ClosingAction.DROP, EventAction.CANCEL);
         }
         else {
-            return new ProcessingResult(ClosingAction.DEFAULT, ClosingAction.DONE, EventAction.CANCEL).postpone();
+            return new ProcessingResult(ClosingAction.NOTHING, ClosingAction.DONE, EventAction.CANCEL).postpone();
         }
 
     }

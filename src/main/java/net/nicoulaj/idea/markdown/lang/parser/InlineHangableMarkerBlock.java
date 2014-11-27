@@ -29,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
 public abstract class InlineHangableMarkerBlock extends MarkerBlockImpl {
 
     @NotNull
-    private final InlineMarkerManager markerManager;
+    protected final InlineMarkerManager markerManager;
 
     public InlineHangableMarkerBlock(@NotNull MarkdownConstraints myConstraints,
                                      @NotNull PsiBuilder builder,

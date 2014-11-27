@@ -88,6 +88,7 @@ public interface MarkdownTokenTypes extends TokenType {
     IElementType EMPH = new MarkdownElementType("EMPH");
 
     IElementType BACKTICK = new MarkdownElementType("BACKTICK");
+    IElementType ESCAPED_BACKTICKS = new MarkdownElementType("ESCAPED_BACKTICKS");
 
     IElementType TAG_NAME = new MarkdownElementType("TAG_NAME");
     IElementType LIST_BULLET = new MarkdownElementType("LIST_BULLET");

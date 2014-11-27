@@ -221,6 +221,5 @@ FILE
   PsiElement(Markdown:EOL)('\n')
   MarkdownPsiElementImpl(Markdown:PARAGRAPH)
     PsiElement(Markdown:TEXT)('foo')
-  PsiElement(Markdown:EOL)('\n')
-  MarkdownPsiElementImpl(Markdown:CODE_FENCE)
-    PsiElement(Markdown:CODE_FENCE_START)('```')
+    PsiElement(Markdown:EOL)('\n')
+    PsiElement(Markdown:BACKTICK)('```')

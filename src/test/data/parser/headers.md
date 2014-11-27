@@ -55,6 +55,9 @@ atx headers:
 ----
 `
 
+Foo *bar*
+=========
+
 <a title="a lot
 ---
 of dashes"/>
