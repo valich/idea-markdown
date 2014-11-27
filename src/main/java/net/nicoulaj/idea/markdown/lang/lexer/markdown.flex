@@ -140,7 +140,8 @@ import java.util.Stack;
 
     parseDelimited.exitChar = last;
     parseDelimited.returnType = contentsType;
-    parseDelimited.inlinesAllowed = allowInlines;
+//    parseDelimited.inlinesAllowed = allowInlines;
+    parseDelimited.inlinesAllowed = true;
 
     yybegin(PARSE_DELIMITED);
 
@@ -386,7 +387,7 @@ LINK_ID = [^\n\[]*
   }
 
   // Code fence
-  "~~~" "~"* | "```" "`"* {
+  "~~~" "~"* | "```" "`"* / [^\n\r`]* {EOL} {
     if (isFourIndent()) {
       resetState();
     }
@@ -415,6 +416,11 @@ LINK_ID = [^\n\[]*
 
 
 <AFTER_LINE_START, PARSE_DELIMITED> {
+  // The special case of a backtick
+  \\"`"+ {
+    return getReturnGeneralized(Token.ESCAPED_BACKTICKS);
+  }
+
   // Escaping
   \\[\\`*_{}\[\]()#+-.!] {
     return getReturnGeneralized(Token.TEXT);
@@ -423,7 +429,7 @@ LINK_ID = [^\n\[]*
   // Backticks (code span)
   "`"+ {
     if (canInline()) {
-      startCodeSpan();
+      //startCodeSpan();
       return Token.BACKTICK;
     }
     return parseDelimited.returnType;
