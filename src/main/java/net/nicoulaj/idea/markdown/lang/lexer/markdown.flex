@@ -37,6 +37,12 @@ import java.util.Stack;
   private LinkDef linkDef = new LinkDef();
   private CodeFence codeFence = new CodeFence();
   private ParseDelimited parseDelimited = new ParseDelimited();
+  private ParseUndelimited parseUndelimited = new ParseUndelimited();
+
+  private static class ParseUndelimited {
+    IElementType returnType = null;
+    int lengthToConsume = 0;
+  }
 
   private static class ParseDelimited {
     char exitChar = 0;
@@ -147,6 +153,24 @@ import java.util.Stack;
 
     yypushback(yylength() - 1);
     return getDelimiterTokenType(first);
+  }
+
+  private void parseUndelimited(IElementType returnType) {
+    parseUndelimited.returnType = returnType;
+    parseUndelimited.lengthToConsume = yylength();
+
+    yypushback(yylength());
+    stateStack.push(yystate());
+
+    yybegin(PARSE_UNDELIMITED);
+  }
+
+  private IElementType undelimitedOut(IElementType returnType) {
+    parseUndelimited.lengthToConsume -= yylength();
+    if (parseUndelimited.lengthToConsume <= 0) {
+      yybegin(stateStack.pop());
+    }
+    return returnType;
   }
 
   private void increaseIndent(int delta) {
@@ -284,7 +308,7 @@ EMAIL_AUTOLINK = "<" [a-zA-Z0-9.!#$%&'*+/=?\^_`{|}~-]+ "@"[a-zA-Z0-9]([a-zA-Z0-9
 
 LINK_ID = [^\n\[]*
 
-%state HTML_BLOCK, TAG_START, AFTER_LINE_START, LINK, LINK_DEF, PARSE_DELIMITED, CODE, CODE_FENCE, CODE_SPAN, LINK_REF
+%state HTML_BLOCK, TAG_START, AFTER_LINE_START, LINK, LINK_DEF, PARSE_DELIMITED, PARSE_UNDELIMITED, CODE, CODE_FENCE, CODE_SPAN, LINK_REF
 
 %%
 
@@ -451,6 +475,20 @@ LINK_ID = [^\n\[]*
 
 }
 
+<PARSE_UNDELIMITED> {
+
+  "`"+ {
+    return undelimitedOut(Token.BACKTICK);
+  }
+
+  // Escaping
+  \\[\\`*_{}\[\]()#+-.!] |
+  {EOL} |
+  . {
+    return undelimitedOut(parseUndelimited.returnType);
+  }
+}
+
 <AFTER_LINE_START> {
 
   // atx header end
@@ -574,7 +612,8 @@ LINK_ID = [^\n\[]*
           return Token.COLON;
         }
         linkDef.wasUrl = true;
-        return Token.URL;
+        parseUndelimited(Token.URL);
+        continue;
       }
 
       if (yystate() == LINK_DEF) {
