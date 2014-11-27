@@ -32,6 +32,10 @@ import net.nicoulaj.idea.markdown.lang.parser.MarkdownConstraints;
 import net.nicoulaj.idea.markdown.lang.parser.MarkdownParserUtil;
 import net.nicoulaj.idea.markdown.lang.parser.MarkerBlock;
 import net.nicoulaj.idea.markdown.lang.parser.markerblocks.*;
+import net.nicoulaj.idea.markdown.lang.parser.markerblocks.inline.CodeSpanMarkerBlock;
+import net.nicoulaj.idea.markdown.lang.parser.markerblocks.inline.EmphStrongMarkerBlock;
+import net.nicoulaj.idea.markdown.lang.parser.markerblocks.inline.LinkDefinitionMarkerBlock;
+import net.nicoulaj.idea.markdown.lang.parser.markerblocks.inline.LinkLabelMarkerBlock;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -91,8 +95,7 @@ public class CommonMarkMarkerProcessor extends FixedPriorityListMarkerProcessor 
         }
         else if (tokenType == MarkdownTokenTypes.LIST_NUMBER
             || tokenType == MarkdownTokenTypes.LIST_BULLET) {
-            final MarkerBlock topBlock = ContainerUtil.getLastItem(getMarkersStack());
-            if (topBlock instanceof ListMarkerBlock) {
+            if (getLastBlock() instanceof ListMarkerBlock) {
                 result.add(new ListItemMarkerBlock(newConstraints, builder.mark()));
             }
             else {
@@ -118,13 +121,34 @@ public class CommonMarkMarkerProcessor extends FixedPriorityListMarkerProcessor 
 
                 if (isAtLineStart(builder)) {
                     result.add(new SetextHeaderMarkerBlock(newConstraints, builder.mark()));
+
                 }
+                addLinkDefinitionIfAny(builder, result, newConstraints, paragraphToUse);
             }
 
             addInlineMarkerBlocks(result, paragraphToUse, builder, tokenType);
         }
 
         return result.toArray(new MarkerBlock[result.size()]);
+    }
+
+    private void addLinkDefinitionIfAny(PsiBuilder builder,
+                                       List<MarkerBlock> result,
+                                       MarkdownConstraints newConstraints,
+                                       ParagraphMarkerBlock paragraphToUse) {
+        if (builder.getTokenType() != MarkdownTokenTypes.LBRACKET) {
+            return;
+        }
+
+        final PsiBuilder.Marker definitionMarker = builder.mark();
+
+        final LinkLabelMarkerBlock linkLabelMarkerBlock =
+                new LinkLabelMarkerBlock(newConstraints, builder.mark(), paragraphToUse.getInlineMarkerManager());
+        result.add(new LinkDefinitionMarkerBlock(newConstraints,
+                                                 definitionMarker,
+                                                 paragraphToUse.getInlineMarkerManager(),
+                                                 linkLabelMarkerBlock));
+        result.add(linkLabelMarkerBlock);
     }
 
     protected void addInlineMarkerBlocks(@NotNull List<MarkerBlock> result,

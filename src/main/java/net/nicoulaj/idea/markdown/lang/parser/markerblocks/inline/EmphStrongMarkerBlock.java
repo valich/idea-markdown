@@ -18,7 +18,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package net.nicoulaj.idea.markdown.lang.parser.markerblocks;
+package net.nicoulaj.idea.markdown.lang.parser.markerblocks.inline;
 
 import com.intellij.lang.PsiBuilder;
 import com.intellij.psi.tree.IElementType;
@@ -51,7 +51,7 @@ public class EmphStrongMarkerBlock extends InlineHangableMarkerBlock {
                                  @NotNull PsiBuilder builder,
                                  @NotNull InlineMarkerManager markerManager,
                                  @Nullable EmphStrongMarkerBlock prevEmph) {
-        super(myConstraints, builder, MarkdownTokenTypes.EMPH, markerManager);
+        super(myConstraints, builder.mark(), MarkdownTokenTypes.EMPH, markerManager);
 
         final String tokenText = builder.getTokenText();
         assert tokenText != null : "type is not null so text is also?";
@@ -75,10 +75,6 @@ public class EmphStrongMarkerBlock extends InlineHangableMarkerBlock {
 
     protected void setStrong() {
         myNodeType = MarkdownElementTypes.STRONG;
-    }
-
-    @NotNull @Override protected ClosingAction getDefaultAction() {
-        return ClosingAction.DROP;
     }
 
     @NotNull @Override protected ProcessingResult doProcessToken(@NotNull IElementType tokenType,

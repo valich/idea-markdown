@@ -43,6 +43,11 @@ public interface MarkdownElementTypes {
 
     IElementType STRONG = new MarkdownElementType("STRONG");
 
+    IElementType LINK_DEFINITION = new MarkdownElementType("LINK_DEFINITION");
+    IElementType LINK_LABEL = new MarkdownElementType("LINK_LABEL");
+    IElementType LINK_DESTINATION = new MarkdownElementType("LINK_DESTINATION");
+    IElementType LINK_TITLE = new MarkdownElementType("LINK_TITLE");
+
     IElementType SETEXT_1 = new MarkdownElementType("SETEXT_1");
     IElementType SETEXT_2 = new MarkdownElementType("SETEXT_2");
 

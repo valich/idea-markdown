@@ -25,9 +25,6 @@ import com.intellij.lang.PsiBuilder;
 import com.intellij.lang.PsiParser;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.psi.tree.IElementType;
-import com.intellij.psi.tree.TokenSet;
-import net.nicoulaj.idea.markdown.lang.MarkdownElementTypes;
-import net.nicoulaj.idea.markdown.lang.MarkdownTokenTypes;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -60,6 +57,7 @@ public class MarkdownParser implements PsiParser {
     @NotNull
     public ASTNode parse(IElementType root, PsiBuilder builder) {
         PsiBuilder.Marker rootMarker = builder.mark();
+        builder.setDebugMode(true);
 
         while (!builder.eof()) {
             final IElementType tokenType = builder.getTokenType();

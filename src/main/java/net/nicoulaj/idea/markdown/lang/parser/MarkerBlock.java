@@ -22,6 +22,7 @@ package net.nicoulaj.idea.markdown.lang.parser;
 
 import com.intellij.lang.PsiBuilder;
 import com.intellij.psi.tree.IElementType;
+import com.intellij.util.Consumer;
 import org.jetbrains.annotations.NotNull;
 
 public interface MarkerBlock {
@@ -76,30 +77,56 @@ public interface MarkerBlock {
         public final ClosingAction selfAction;
         public final EventAction eventAction;
 
-        private final boolean isPostponed;
+        public final boolean isPostponed;
+        @NotNull
+        public final Consumer<MarkerProcessor> customAction;
 
-        public ProcessingResult(@NotNull ClosingAction childrenAction, @NotNull ClosingAction selfAction, @NotNull EventAction eventAction) {
-            this(childrenAction, selfAction, eventAction, false);
+        public ProcessingResult(@NotNull ClosingAction childrenAction,
+                                @NotNull ClosingAction selfAction,
+                                @NotNull EventAction eventAction) {
+            //noinspection unchecked
+            this(childrenAction, selfAction, eventAction, false, Consumer.EMPTY_CONSUMER);
         }
 
-        private ProcessingResult(@NotNull ClosingAction childrenAction, @NotNull ClosingAction selfAction, @NotNull EventAction eventAction, boolean isPostponed) {
+        private ProcessingResult(@NotNull ClosingAction childrenAction,
+                                 @NotNull ClosingAction selfAction,
+                                 @NotNull EventAction eventAction,
+                                 boolean isPostponed,
+                                 @NotNull Consumer<MarkerProcessor> customAction) {
             this.childrenAction = childrenAction;
             this.selfAction = selfAction;
             this.eventAction = eventAction;
             this.isPostponed = isPostponed;
+            this.customAction = customAction;
         }
 
-        public boolean isPostponed() {
-            return isPostponed;
-        }
-
+        @NotNull
         public ProcessingResult postpone() {
             if (isPostponed) {
                 return this;
             }
 
-            return new ProcessingResult(childrenAction, selfAction, eventAction, true);
+            return new ProcessingResult(childrenAction, selfAction, eventAction, true, customAction);
         }
+
+        @NotNull
+        public ProcessingResult withCustomAction(@NotNull final Consumer<MarkerProcessor> customAction) {
+            final Consumer<MarkerProcessor> actionToSet;
+            if (this.customAction == Consumer.EMPTY_CONSUMER) {
+                actionToSet = customAction;
+            } else {
+                final Consumer<MarkerProcessor> oldAction = this.customAction;
+
+                actionToSet = new Consumer<MarkerProcessor>() {
+                    @Override public void consume(MarkerProcessor markerProcessor) {
+                        oldAction.consume(markerProcessor);
+                        customAction.consume(markerProcessor);
+                    }
+                };
+            }
+            return new ProcessingResult(childrenAction, selfAction, eventAction, isPostponed, actionToSet);
+        }
+
     }
 
 }

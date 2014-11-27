@@ -18,7 +18,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package net.nicoulaj.idea.markdown.lang.parser.markerblocks;
+package net.nicoulaj.idea.markdown.lang.parser.markerblocks.inline;
 
 import com.intellij.lang.PsiBuilder;
 import com.intellij.openapi.util.Condition;
@@ -31,58 +31,35 @@ import net.nicoulaj.idea.markdown.lang.parser.InlineMarkerManager;
 import net.nicoulaj.idea.markdown.lang.parser.MarkdownConstraints;
 import org.jetbrains.annotations.NotNull;
 
-public class CodeSpanMarkerBlock extends InlineHangableMarkerBlock {
-    private final int length;
+public class LinkLabelMarkerBlock extends InlineHangableMarkerBlock {
 
-    public CodeSpanMarkerBlock(@NotNull MarkdownConstraints myConstraints,
-                               @NotNull PsiBuilder builder,
-                               @NotNull InlineMarkerManager markerManager) {
-        super(myConstraints, builder, TokenSet.create(
-                MarkdownTokenTypes.BACKTICK, MarkdownTokenTypes.ESCAPED_BACKTICKS //, MarkdownTokenTypes.EMPH, MarkdownTokenTypes.INLINE_HTML,
-//                MarkdownTokenTypes.AUTOLINK, MarkdownTokenTypes.EMAIL_AUTOLINK, MarkdownTokenTypes.LT
+    public LinkLabelMarkerBlock(@NotNull MarkdownConstraints myConstraints,
+                                @NotNull PsiBuilder.Marker marker,
+                                @NotNull InlineMarkerManager markerManager) {
+        super(myConstraints, marker, TokenSet.create(
+                MarkdownTokenTypes.LBRACKET,
+                MarkdownTokenTypes.RBRACKET
         ), markerManager);
-
-
-        length = getLength(builder, true);
-    }
-
-    private int getLength(@NotNull PsiBuilder builder, boolean canEscape) {
-        final String tokenText = builder.getTokenText();
-        assert tokenText != null;
-
-        int toSubtract = 0;
-        if (builder.getTokenType() == MarkdownTokenTypes.ESCAPED_BACKTICKS) {
-            if (canEscape) {
-                toSubtract = 2;
-            } else {
-                toSubtract = 1;
-            }
-        }
-
-        return tokenText.length() - toSubtract;
-    }
-
-    @NotNull @Override protected ClosingAction getDefaultAction() {
-        return ClosingAction.DROP;
     }
 
     @NotNull @Override protected ProcessingResult doProcessToken(@NotNull IElementType tokenType,
                                                                  @NotNull PsiBuilder builder,
                                                                  @NotNull
                                                                  MarkdownConstraints currentConstraints) {
-        if (getLength(builder, false) == length) {
-            markerManager.cancelMarkersInterlappingWith(this, new Condition<InlineHangableMarkerBlock>() {
-                @Override public boolean value(InlineHangableMarkerBlock markerBlock) {
-                    return markerBlock instanceof EmphStrongMarkerBlock;
-                }
-            });
-            return ProcessingResult.DEFAULT.postpone();
-        } else {
-            return ProcessingResult.CANCEL;
+        if (tokenType == MarkdownTokenTypes.LBRACKET) {
+            return new ProcessingResult(ClosingAction.NOTHING, ClosingAction.DROP, EventAction.PROPAGATE);
         }
+
+        markerManager.cancelMarkersInterlappingWith(this, new Condition<InlineHangableMarkerBlock>() {
+            @Override public boolean value(InlineHangableMarkerBlock markerBlock) {
+                return markerBlock instanceof EmphStrongMarkerBlock;
+            }
+        });
+        return new ProcessingResult(ClosingAction.NOTHING, ClosingAction.DONE, EventAction.PROPAGATE).postpone();
     }
 
     @NotNull @Override public IElementType getDefaultNodeType() {
-        return MarkdownElementTypes.CODE_SPAN;
+        return MarkdownElementTypes.LINK_LABEL;
     }
+
 }

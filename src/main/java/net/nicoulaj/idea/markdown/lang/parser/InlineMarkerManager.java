@@ -69,22 +69,29 @@ public class InlineMarkerManager {
         Set<InlineHangableMarkerBlock> toDelete = ContainerUtil.newHashSet();
         for (MarkerInfo info : markers.values()) {
             if (range.contains(info.getStart()) ^ range.containsOffset(info.getEnd())) {
-                if (!shouldDelete.value(info.getMarkerBlock())) {
-                    continue;
+                if (shouldDelete.value(info.getMarkerBlock())) {
+                    toDelete.add(info.getMarkerBlock());
                 }
-
-                if (info.getEnd() != -1) {
-                    info.endMarker.drop();
-                }
-                info.getMarkerBlock().getMarker().drop();
-
-                toDelete.add(info.getMarkerBlock());
             }
         }
 
         for (InlineHangableMarkerBlock key : toDelete) {
-            markers.remove(key);
+            cancelMarker(key);
         }
+    }
+
+    public void cancelMarker(@NotNull InlineHangableMarkerBlock key) {
+        final MarkerInfo info = markers.get(key);
+        if (info == null) {
+            return;
+        }
+
+        if (info.getEnd() != -1) {
+            info.endMarker.drop();
+        }
+        info.getMarkerBlock().getMarker().drop();
+
+        markers.remove(key);
     }
 
     public Collection<InlineHangableMarkerBlock> getOpenedMarkers() {
@@ -103,7 +110,7 @@ public class InlineMarkerManager {
         for (MarkerInfo info : markers.values()) {
             processingList.add(new Event(info.getStart(), info));
             if (info.getEnd() != -1) {
-                processingList.add(new Event(info.getEnd(), info));
+//                processingList.add(new Event(info.getEnd(), info));
             }
         }
         Collections.sort(processingList);
@@ -113,7 +120,6 @@ public class InlineMarkerManager {
 
             final MarkerInfo info = event.markerInfo;
             if (info.getEnd() == -1) {
-                info.getMarkerBlock().acceptAction(MarkerBlock.ClosingAction.DROP);
                 info.getMarkerBlock().getMarker().drop();
             } else if (event.isStart()) {
                 info.endPhysically();
@@ -179,7 +185,7 @@ public class InlineMarkerManager {
                 return position - o.position;
             }
             if (isStart() == o.isStart()) {
-                return 0;
+                return -(markerInfo.start + markerInfo.end - o.markerInfo.start - o.markerInfo.end);
             }
             return isStart() ? 1 : -1;
         }

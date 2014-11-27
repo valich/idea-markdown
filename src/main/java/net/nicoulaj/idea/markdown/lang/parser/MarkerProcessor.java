@@ -83,11 +83,8 @@ public abstract class MarkerProcessor {
         if (!someoneHasCancelledEvent) {
             final MarkerBlock[] newMarkerBlocks = createNewMarkerBlocks(tokenType, builder);
             for (MarkerBlock newMarkerBlock : newMarkerBlocks) {
-                markersStack.add(newMarkerBlock);
-                topBlockConstraints = newMarkerBlock.getBlockConstraints();
-                cachedPermutation = null;
+                addNewMarkerBlock(newMarkerBlock);
             }
-            currentConstraints = topBlockConstraints;
         }
 
         if (tokenType == MarkdownTokenTypes.EOL) {
@@ -96,6 +93,7 @@ public abstract class MarkerProcessor {
             currentConstraints = passDuplicatingTokensAndGetCurrentConstraints(builder);
         }
     }
+
 
     private void processPostponedActions() {
         while (!postponedActions.isEmpty()) {
@@ -106,6 +104,12 @@ public abstract class MarkerProcessor {
         }
     }
 
+    public void addNewMarkerBlock(MarkerBlock newMarkerBlock) {
+        markersStack.add(newMarkerBlock);
+        topBlockConstraints = newMarkerBlock.getBlockConstraints();
+        cachedPermutation = null;
+        currentConstraints = topBlockConstraints;
+    }
 
     public void flushMarkers() {
         processPostponedActions();
@@ -162,7 +166,8 @@ public abstract class MarkerProcessor {
         }
 
         try {
-            for (Integer index : cachedPermutation) {
+            List<Integer> currentPermutation = cachedPermutation;
+            for (Integer index : currentPermutation) {
                 if (index >= markersStack.size()) {
                     continue;
                 }
@@ -170,7 +175,7 @@ public abstract class MarkerProcessor {
                 final MarkerBlock markerBlock = markersStack.get(index);
                 final MarkerBlock.ProcessingResult processingResult = markerBlock.processToken(tokenType, builder, topBlockConstraints);
 
-                if (processingResult.isPostponed()) {
+                if (processingResult.isPostponed) {
                     postponedActions.put(index, processingResult);
                 }
                 else {
@@ -190,7 +195,7 @@ public abstract class MarkerProcessor {
         }
         finally {
             // Stack was changed
-            if (markersStack.size() != cachedPermutation.size()) {
+            if (cachedPermutation == null || markersStack.size() != cachedPermutation.size()) {
                 cachedPermutation = null;
                 //noinspection ConstantConditions
                 topBlockConstraints = markersStack.isEmpty()
@@ -208,6 +213,8 @@ public abstract class MarkerProcessor {
         if (markerBlock.acceptAction(processingResult.selfAction)) {
             markersStack.remove((int) index);
         }
+
+        processingResult.customAction.consume(this);
     }
 
     private void closeChildren(int index, @NotNull MarkerBlock.ClosingAction childrenAction) {
