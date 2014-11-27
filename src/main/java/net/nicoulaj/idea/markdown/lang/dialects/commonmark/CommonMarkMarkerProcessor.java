@@ -31,7 +31,6 @@ import net.nicoulaj.idea.markdown.lang.dialects.FixedPriorityListMarkerProcessor
 import net.nicoulaj.idea.markdown.lang.parser.MarkdownConstraints;
 import net.nicoulaj.idea.markdown.lang.parser.MarkdownParserUtil;
 import net.nicoulaj.idea.markdown.lang.parser.MarkerBlock;
-import net.nicoulaj.idea.markdown.lang.parser.MarkerProcessor;
 import net.nicoulaj.idea.markdown.lang.parser.markerblocks.*;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -66,7 +65,8 @@ public class CommonMarkMarkerProcessor extends FixedPriorityListMarkerProcessor 
         return result;
     }
 
-    @NotNull @Override public MarkerBlock[] createNewMarkerBlocks(@NotNull final IElementType tokenType, @NotNull PsiBuilder builder, @NotNull MarkerProcessor markerProcessor) {
+    @NotNull @Override public MarkerBlock[] createNewMarkerBlocks(@NotNull final IElementType tokenType,
+                                                                  @NotNull PsiBuilder builder) {
         if (tokenType == MarkdownTokenTypes.EOL) {
             return NO_BLOCKS;
         }
@@ -79,10 +79,11 @@ public class CommonMarkMarkerProcessor extends FixedPriorityListMarkerProcessor 
 
         List<MarkerBlock> result = new ArrayList<MarkerBlock>(1);
 
-        final MarkdownConstraints newConstraints = markerProcessor.getCurrentConstraints().addModifierIfNeeded(tokenType, builder);
+        final MarkdownConstraints newConstraints = getCurrentConstraints().addModifierIfNeeded(tokenType, builder);
+        final ParagraphMarkerBlock paragraph = getParagraphBlock();
 
         if (MarkdownParserUtil.getIndentBeforeRawToken(builder, 0) >= newConstraints.getIndent() + 4
-            && getParagraphBlock(markerProcessor) == null) {
+            && paragraph == null) {
             result.add(new CodeBlockMarkerBlock(newConstraints, builder.mark()));
         }
         else if (tokenType == MarkdownTokenTypes.BLOCK_QUOTE) {
@@ -90,7 +91,7 @@ public class CommonMarkMarkerProcessor extends FixedPriorityListMarkerProcessor 
         }
         else if (tokenType == MarkdownTokenTypes.LIST_NUMBER
             || tokenType == MarkdownTokenTypes.LIST_BULLET) {
-            final MarkerBlock topBlock = ContainerUtil.getLastItem(markerProcessor.getMarkersStack());
+            final MarkerBlock topBlock = ContainerUtil.getLastItem(getMarkersStack());
             if (topBlock instanceof ListMarkerBlock) {
                 result.add(new ListItemMarkerBlock(newConstraints, builder.mark()));
             }
@@ -99,7 +100,7 @@ public class CommonMarkMarkerProcessor extends FixedPriorityListMarkerProcessor 
                 result.add(new ListItemMarkerBlock(newConstraints, builder.mark()));
             }
         }
-        else if (tokenType == MarkdownTokenTypes.ATX_HEADER && getParagraphBlock(markerProcessor) == null) {
+        else if (tokenType == MarkdownTokenTypes.ATX_HEADER && paragraph == null) {
             final String tokenText = builder.getTokenText();
             LOG.assertTrue(tokenText != null, "type is not null but text is!");
             result.add(new AtxHeaderMarkerBlock(newConstraints, builder.mark(), tokenText.length()));
@@ -108,51 +109,54 @@ public class CommonMarkMarkerProcessor extends FixedPriorityListMarkerProcessor 
             result.add(new CodeFenceMarkerBlock(newConstraints, builder.mark()));
         }
         else {
-            ParagraphMarkerBlock paragraph = getParagraphBlock(markerProcessor);
-
             LOG.assertTrue(tokenType != MarkdownTokenTypes.EOL);
+            ParagraphMarkerBlock paragraphToUse = paragraph;
 
-            if (tokenType != MarkdownTokenTypes.EOL && paragraph == null) {
-                paragraph = new ParagraphMarkerBlock(newConstraints, builder);
-                result.add(paragraph);
+            if (paragraph == null) {
+                paragraphToUse = new ParagraphMarkerBlock(newConstraints, builder);
+                result.add(paragraphToUse);
 
-                // Inlines here
                 if (isAtLineStart(builder)) {
                     result.add(new SetextHeaderMarkerBlock(newConstraints, builder.mark()));
                 }
             }
 
-            LOG.assertTrue(paragraph != null);
-
-            if (tokenType == MarkdownTokenTypes.EMPH) {
-                final MarkerBlock lastBlock = getLastBlock(markerProcessor);
-                final EmphStrongMarkerBlock prevBlock = lastBlock instanceof EmphStrongMarkerBlock
-                                                        ? ((EmphStrongMarkerBlock) lastBlock)
-                                                        : null;
-                result.add(new EmphStrongMarkerBlock(newConstraints,
-                                                     builder,
-                                                     paragraph.getInlineMarkerManager(),
-                                                     prevBlock));
-            }
-            else if (tokenType == MarkdownTokenTypes.BACKTICK
-                    || tokenType == MarkdownTokenTypes.ESCAPED_BACKTICKS && builder.getTokenText().length() > 2) {
-                result.add(new CodeSpanMarkerBlock(newConstraints, builder, paragraph.getInlineMarkerManager()));
-            }
+            addInlineMarkerBlocks(result, paragraphToUse, builder, tokenType);
         }
 
         return result.toArray(new MarkerBlock[result.size()]);
     }
 
+    protected void addInlineMarkerBlocks(@NotNull List<MarkerBlock> result,
+                                         @NotNull ParagraphMarkerBlock paragraphToUse,
+                                         @NotNull PsiBuilder builder,
+                                         @NotNull IElementType tokenType) {
+        if (tokenType == MarkdownTokenTypes.EMPH) {
+            final MarkerBlock lastBlock = getLastBlock();
+            final EmphStrongMarkerBlock prevBlock = lastBlock instanceof EmphStrongMarkerBlock
+                                                    ? ((EmphStrongMarkerBlock) lastBlock)
+                                                    : null;
+            result.add(new EmphStrongMarkerBlock(getCurrentConstraints(),
+                                                 builder,
+                                                 paragraphToUse.getInlineMarkerManager(),
+                                                 prevBlock));
+        }
+        else if (tokenType == MarkdownTokenTypes.BACKTICK
+                 || tokenType == MarkdownTokenTypes.ESCAPED_BACKTICKS && builder.getTokenText().length() > 2) {
+            result.add(new CodeSpanMarkerBlock(getCurrentConstraints(), builder, paragraphToUse.getInlineMarkerManager()));
+        }
+    }
+
 
     @Contract(pure=true)
     @Nullable
-    private static ParagraphMarkerBlock getParagraphBlock(@NotNull MarkerProcessor markerProcessor) {
-        return ContainerUtil.findInstance(markerProcessor.getMarkersStack(), ParagraphMarkerBlock.class);
+    private ParagraphMarkerBlock getParagraphBlock() {
+        return ContainerUtil.findInstance(getMarkersStack(), ParagraphMarkerBlock.class);
     }
 
     @Nullable
-    private static MarkerBlock getLastBlock(@NotNull MarkerProcessor markerProcessor) {
-        return ContainerUtil.getLastItem(markerProcessor.getMarkersStack());
+    private MarkerBlock getLastBlock() {
+        return ContainerUtil.getLastItem(getMarkersStack());
     }
 
     private static boolean isAtLineStart(@NotNull PsiBuilder builder) {

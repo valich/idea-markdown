@@ -65,7 +65,8 @@ public abstract class MarkerProcessor {
     protected abstract List<Integer> getPrioritizedMarkerPermutation();
 
     @NotNull
-    public abstract MarkerBlock[] createNewMarkerBlocks(@NotNull IElementType tokenType, @NotNull PsiBuilder builder, @NotNull MarkerProcessor markerProcessor);
+    public abstract MarkerBlock[] createNewMarkerBlocks(@NotNull IElementType tokenType,
+                                                        @NotNull PsiBuilder builder);
 
     @NotNull public List<MarkerBlock> getMarkersStack() {
         return markersStack;
@@ -80,7 +81,7 @@ public abstract class MarkerProcessor {
 
         final boolean someoneHasCancelledEvent = processMarkers(tokenType, builder);
         if (!someoneHasCancelledEvent) {
-            final MarkerBlock[] newMarkerBlocks = createNewMarkerBlocks(tokenType, builder, this);
+            final MarkerBlock[] newMarkerBlocks = createNewMarkerBlocks(tokenType, builder);
             for (MarkerBlock newMarkerBlock : newMarkerBlocks) {
                 markersStack.add(newMarkerBlock);
                 topBlockConstraints = newMarkerBlock.getBlockConstraints();
