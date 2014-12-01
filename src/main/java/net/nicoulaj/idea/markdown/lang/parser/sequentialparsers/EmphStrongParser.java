@@ -22,9 +22,6 @@ package net.nicoulaj.idea.markdown.lang.parser.sequentialparsers;
 
 import com.intellij.openapi.util.Couple;
 import com.intellij.openapi.util.TextRange;
-import com.intellij.openapi.util.text.StringUtil;
-import com.intellij.psi.TokenType;
-import com.intellij.psi.tree.IElementType;
 import com.intellij.util.containers.ContainerUtil;
 import com.intellij.util.containers.Stack;
 import net.nicoulaj.idea.markdown.lang.MarkdownElementTypes;
@@ -103,49 +100,6 @@ public class EmphStrongParser implements SequentialParser {
         return result;
     }
 
-    private int findNotEmph(TokensCache tokens, List<Integer> indices, int from) {
-        for (int i = from; i < indices.size(); ++i) {
-            int index = indices.get(i);
-            if (tokens.getIterator(index).getType() != MarkdownTokenTypes.EMPH) {
-                return i;
-            }
-        }
-        return indices.size();
-    }
-
-    private int findClosing(TokensCache tokens, List<Integer> indices, int from, int num, char type) {
-        for (int i = from; i < indices.size(); ++i) {
-            int index = indices.get(i);
-
-            TokensCache.Iterator iterator = tokens.getIterator(index);
-            if (iterator.getType() != MarkdownTokenTypes.EMPH) {
-                continue;
-            }
-
-            if (getType(iterator) != type) {
-                continue;
-            }
-
-            int endNumber = canEndNumber(iterator);
-            if (endNumber == 2 && (i + 1 == indices.size() || indices.get(i + 1) != index + 1)) {
-                endNumber = 1;
-            }
-
-            if (endNumber >= num) {
-                while (i + 2 < indices.size() &&
-                       indices.get(i + 2) == index + 2 &&
-                       canEndNumber(tokens.getIterator(index + 1)) == 2) {
-                    i++;
-                    index++;
-                }
-
-                return i;
-            }
-        }
-
-        return -1;
-    }
-
     private int canStartNumber(@NotNull TokensCache.Iterator info) {
         if (getType(info) == ITALIC && info.rawLookup(-1) != null) {
             String text = info.rollback().getText();
@@ -155,7 +109,7 @@ public class EmphStrongParser implements SequentialParser {
         }
 
         for (int i = 0; i < 50; ++i) {
-            if (isWhitespace(info, 1)) {
+            if (ParserUtil.isWhitespace(info, 1)) {
                 return 0;
             }
             if (info.rawLookup(1) != MarkdownTokenTypes.EMPH || getType(info) != getType(info.advance())) {
@@ -168,7 +122,7 @@ public class EmphStrongParser implements SequentialParser {
     }
 
     private int canEndNumber(@NotNull TokensCache.Iterator info) {
-        if (isWhitespace(info, -1)) {
+        if (ParserUtil.isWhitespace(info, -1)) {
             return 0;
         }
 
@@ -183,22 +137,6 @@ public class EmphStrongParser implements SequentialParser {
         }
 
         return 50;
-    }
-
-    private boolean isWhitespace(TokensCache.Iterator info, int lookup) {
-        IElementType type = info.rawLookup(lookup);
-        if (type == null) {
-            return false;
-        }
-        if (type == MarkdownTokenTypes.EOL || type == TokenType.WHITE_SPACE) {
-            return true;
-        }
-        if (lookup == -1) {
-            return StringUtil.endsWithChar(info.rollback().getText(), ' ');
-        }
-        else {
-            return StringUtil.startsWithChar(info.advance().getText(), ' ');
-        }
     }
 
     private char getType(@NotNull TokensCache.Iterator info) {

@@ -22,8 +22,12 @@ package net.nicoulaj.idea.markdown.lang.parser;
 
 import com.intellij.lang.PsiBuilder;
 import com.intellij.openapi.util.TextRange;
+import com.intellij.openapi.util.text.StringUtil;
+import com.intellij.psi.TokenType;
+import com.intellij.psi.tree.IElementType;
 import com.intellij.util.containers.ContainerUtil;
 import com.intellij.util.containers.Stack;
+import net.nicoulaj.idea.markdown.lang.MarkdownTokenTypes;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
@@ -55,6 +59,23 @@ public class ParserUtil {
 
         return result;
     }
+
+    public static boolean isWhitespace(TokensCache.Iterator info, int lookup) {
+        IElementType type = info.rawLookup(lookup);
+        if (type == null) {
+            return false;
+        }
+        if (type == MarkdownTokenTypes.EOL || type == TokenType.WHITE_SPACE) {
+            return true;
+        }
+        if (lookup == -1) {
+            return StringUtil.endsWithChar(info.rollback().getText(), ' ');
+        }
+        else {
+            return StringUtil.startsWithChar(info.advance().getText(), ' ');
+        }
+    }
+
 
     public static void flushMarkers(PsiBuilder builder, Collection<SequentialParser.Node> results, int startPosition, int endPosition) {
         // builder at the startPosition
@@ -101,7 +122,7 @@ public class ParserUtil {
             return info.range.getStartOffset() == position;
         }
 
-        @Override public int compareTo(MyEvent o) {
+        @Override public int compareTo(@NotNull MyEvent o) {
             if (position != o.position) {
                 return position - o.position;
             }

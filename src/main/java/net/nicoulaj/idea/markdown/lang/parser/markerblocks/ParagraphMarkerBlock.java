@@ -27,7 +27,7 @@ import net.nicoulaj.idea.markdown.lang.MarkdownElementTypes;
 import net.nicoulaj.idea.markdown.lang.MarkdownTokenTypeSets;
 import net.nicoulaj.idea.markdown.lang.MarkdownTokenTypes;
 import net.nicoulaj.idea.markdown.lang.parser.*;
-import net.nicoulaj.idea.markdown.lang.parser.sequentialparsers.BacktickParser;
+import net.nicoulaj.idea.markdown.lang.parser.sequentialparsers.AutolinkParser;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
@@ -98,7 +98,7 @@ public class ParagraphMarkerBlock extends MarkerBlockImpl {
                 rollbackMarker.rollbackTo();
                 ParserUtil.flushMarkers(
                         builder,
-                        new BacktickParser().parse(tokensCache,
+                        new AutolinkParser().parse(tokensCache,
                                                             Collections.singleton(TextRange.create(startPosition,
                                                                                                    endPosition))),
                         startPosition,
