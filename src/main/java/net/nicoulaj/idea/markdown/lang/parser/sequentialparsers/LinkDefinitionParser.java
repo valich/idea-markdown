@@ -34,20 +34,20 @@ import java.util.Collection;
 import java.util.List;
 
 public class LinkDefinitionParser implements SequentialParser {
-    @Override public Collection<Node> parse(@NotNull TokensCache tokens,
+    @Override public ParsingResult parse(@NotNull TokensCache tokens,
                                             @NotNull Collection<TextRange> rangesToGlue) {
-        Collection<Node> result = ContainerUtil.newArrayList();
+        Collection<Node> resultNodes = ContainerUtil.newArrayList();
         List<Integer> delegateIndices = ContainerUtil.newArrayList();
         List<Integer> indices = ParserUtil.textRangesToIndices(rangesToGlue);
 
         TokensCache.Iterator iterator = tokens.new ListIterator(indices, 0);
 
-        if (parseLinkDefinition(result, delegateIndices, iterator) != null) {
-            result.addAll(new BacktickParser().parse(tokens, ParserUtil.indicesToTextRanges(delegateIndices)));
-            return result;
+        if (parseLinkDefinition(resultNodes, delegateIndices, iterator) != null) {
+            return new ParsingResult().withNodes(resultNodes)
+                                      .withFurtherProcessing(ParserUtil.indicesToTextRanges(delegateIndices));
         }
 
-        return new BacktickParser().parse(tokens, rangesToGlue);
+        return new ParsingResult().withFurtherProcessing(rangesToGlue);
     }
 
     private TokensCache.Iterator parseLinkDefinition(Collection<Node> result,

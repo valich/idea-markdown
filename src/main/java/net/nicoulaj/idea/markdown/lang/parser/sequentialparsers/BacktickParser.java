@@ -33,9 +33,9 @@ import java.util.Collection;
 import java.util.List;
 
 public class BacktickParser implements SequentialParser {
-    @Override public Collection<Node> parse(@NotNull TokensCache tokens,
+    @Override public ParsingResult parse(@NotNull TokensCache tokens,
                                             @NotNull Collection<TextRange> rangesToGlue) {
-        Collection<Node> result = ContainerUtil.newArrayList();
+        ParsingResult result = new ParsingResult();
 
         List<Integer> indices = ParserUtil.textRangesToIndices(rangesToGlue);
         List<Integer> delegateIndices = ContainerUtil.newArrayList();
@@ -48,7 +48,8 @@ public class BacktickParser implements SequentialParser {
                 int j = findOfSize(tokens, indices, i + 1, getLength(iterator, true));
 
                 if (j != -1) {
-                    result.add(new Node(TextRange.create(indices.get(i), indices.get(j) + 1), MarkdownElementTypes.CODE_SPAN));
+                    result.withNode(new Node(TextRange.create(indices.get(i), indices.get(j) + 1),
+                                             MarkdownElementTypes.CODE_SPAN));
                     i = j;
                     continue;
                 }
@@ -56,11 +57,7 @@ public class BacktickParser implements SequentialParser {
             delegateIndices.add(indices.get(i));
         }
 
-        if (!delegateIndices.isEmpty()) {
-            result.addAll(new EmphStrongParser().parse(tokens, ParserUtil.indicesToTextRanges(delegateIndices)));
-        }
-
-        return result;
+        return result.withFurtherProcessing(ParserUtil.indicesToTextRanges(delegateIndices));
     }
 
     private int findOfSize(@NotNull TokensCache tokens, @NotNull List<Integer> indices, int from, int length) {

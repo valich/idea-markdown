@@ -33,9 +33,9 @@ import java.util.Collection;
 import java.util.List;
 
 public class AutolinkParser implements SequentialParser {
-    @Override public Collection<Node> parse(@NotNull TokensCache tokens,
+    @Override public ParsingResult parse(@NotNull TokensCache tokens,
                                             @NotNull Collection<TextRange> rangesToGlue) {
-        Collection<Node> result = ContainerUtil.newArrayList();
+        ParsingResult result = new ParsingResult();
         List<Integer> delegateIndices = ContainerUtil.newArrayList();
         List<Integer> indices = ParserUtil.textRangesToIndices(rangesToGlue);
 
@@ -48,16 +48,13 @@ public class AutolinkParser implements SequentialParser {
                     iterator = iterator.advance();
                     i++;
                 }
-                result.add(new Node(TextRange.create(indices.get(start), indices.get(i) + 1), MarkdownElementTypes.AUTOLINK));
+                result.withNode(new Node(TextRange.create(indices.get(start), indices.get(i) + 1), MarkdownElementTypes.AUTOLINK));
             }
             else {
                 delegateIndices.add(indices.get(i));
             }
         }
 
-        if (!delegateIndices.isEmpty()) {
-            result.addAll(new LinkDefinitionParser().parse(tokens, ParserUtil.indicesToTextRanges(delegateIndices)));
-        }
-        return result;
+        return result.withFurtherProcessing(ParserUtil.indicesToTextRanges(delegateIndices));
     }
 }

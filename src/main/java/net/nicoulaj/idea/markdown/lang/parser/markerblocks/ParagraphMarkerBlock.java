@@ -27,11 +27,9 @@ import net.nicoulaj.idea.markdown.lang.MarkdownElementTypes;
 import net.nicoulaj.idea.markdown.lang.MarkdownTokenTypeSets;
 import net.nicoulaj.idea.markdown.lang.MarkdownTokenTypes;
 import net.nicoulaj.idea.markdown.lang.parser.*;
-import net.nicoulaj.idea.markdown.lang.parser.sequentialparsers.AutolinkParser;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
-import java.util.Collections;
 
 public class ParagraphMarkerBlock extends MarkerBlockImpl {
     @NotNull
@@ -97,29 +95,17 @@ public class ParagraphMarkerBlock extends MarkerBlockImpl {
                 int endPosition = tokensCache.calcCurrentBuilderPosition(builder);
 
                 rollbackMarker.rollbackTo();
-                final Collection<SequentialParser.Node> results = new AutolinkParser().parse(tokensCache,
-                                                                                             Collections.singleton(
-                                                                                                     TextRange.create(
-                                                                                                             startPosition,
-                                                                                                             endPosition)));
-                ParserUtil.flushMarkers(
-                        builder,
-                        results,
-                        startPosition,
-                        endPosition
-                );
+                final Collection<SequentialParser.Node> results = new SequentialParserManager().runParsingSequence(
+                        tokensCache,
+                        TextRange.create(startPosition, endPosition));
 
-                LOG.assertTrue(tokensCache.calcCurrentBuilderPosition(builder) == endPosition, "We have shifted builder! Bad inline ranges probably");
+                ParserUtil.flushMarkers(builder, results, startPosition, endPosition);
 
-//                myManager.flushAllClosedMarkers();
+                LOG.assertTrue(tokensCache.calcCurrentBuilderPosition(builder) == endPosition,
+                               "We have shifted builder! Bad inline ranges probably");
+
             } else {
                 rollbackMarker.drop();
-//                assert false;
-                // Actually, this practically means that a setext header is here,
-                // and inline structure should be closed and put into the tree
-                // anyway. So it's ok to flush markers in this way, too.
-                // TODO (to be fixed, of course)
-//                myManager.flushAllClosedMarkers();
             }
         }
 

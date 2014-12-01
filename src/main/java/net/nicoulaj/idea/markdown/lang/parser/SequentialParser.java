@@ -22,15 +22,51 @@ package net.nicoulaj.idea.markdown.lang.parser;
 
 import com.intellij.openapi.util.TextRange;
 import com.intellij.psi.tree.IElementType;
+import com.intellij.util.containers.ContainerUtil;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 
 public interface SequentialParser {
 
-    Collection<Node> parse(@NotNull TokensCache tokens, @NotNull Collection<TextRange> rangesToGlue);
+    ParsingResult parse(@NotNull TokensCache tokens, @NotNull Collection<TextRange> rangesToGlue);
 
-    class Node {
+    static class ParsingResult {
+        @NotNull
+        public final Collection<Node> parsedNodes;
+        @NotNull
+        public final Collection<Collection<TextRange>> rangesToProcessFurther;
+
+        public ParsingResult() {
+            this(ContainerUtil.<Node>newArrayList(), ContainerUtil.<Collection<TextRange>>newArrayList());
+        }
+
+        private ParsingResult(
+                @NotNull Collection<Node> parsedNodes,
+                @NotNull
+                Collection<Collection<TextRange>> rangesToProcessFurther) {
+            this.parsedNodes = parsedNodes;
+            this.rangesToProcessFurther = rangesToProcessFurther;
+        }
+
+        public ParsingResult withNode(@NotNull Node result) {
+            parsedNodes.add(result);
+            return this;
+        }
+
+        public ParsingResult withNodes(@NotNull Collection<Node> parsedNodes) {
+            this.parsedNodes.addAll(parsedNodes);
+            return this;
+        }
+
+        public ParsingResult withFurtherProcessing(@NotNull Collection<TextRange> ranges) {
+            rangesToProcessFurther.add(ranges);
+            return this;
+        }
+
+    }
+
+    static class Node {
         @NotNull
         public final TextRange range;
         @NotNull

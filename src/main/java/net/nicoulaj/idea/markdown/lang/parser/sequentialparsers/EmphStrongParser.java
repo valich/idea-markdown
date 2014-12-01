@@ -40,12 +40,11 @@ public class EmphStrongParser implements SequentialParser {
 
     protected static final char BOLD = '*';
 
-    @Override public Collection<Node> parse(@NotNull TokensCache tokens,
+    @Override public ParsingResult parse(@NotNull TokensCache tokens,
                                             @NotNull Collection<TextRange> rangesToGlue) {
-        Collection<Node> result = ContainerUtil.newArrayList();
+        ParsingResult result = new ParsingResult();
 
         List<Integer> indices = ParserUtil.textRangesToIndices(rangesToGlue);
-        List<Integer> delegateIndices = ContainerUtil.newArrayList();
 
         char myType = 0;
         Stack<Couple<Integer>> openingOnes = ContainerUtil.newStack();
@@ -65,8 +64,8 @@ public class EmphStrongParser implements SequentialParser {
                     final int from = lastOpening.first + (lastOpening.second - toMake);
                     final int to = i + toMake - 1;
 
-                    result.add(new Node(TextRange.create(indices.get(from), indices.get(to) + 1),
-                                        toMake == 2 ? MarkdownElementTypes.STRONG : MarkdownElementTypes.EMPH));
+                    result.withNode(new Node(TextRange.create(indices.get(from), indices.get(to) + 1),
+                                             toMake == 2 ? MarkdownElementTypes.STRONG : MarkdownElementTypes.EMPH));
 
                     i += toMake;
                     numCanEnd -= toMake;
@@ -89,10 +88,6 @@ public class EmphStrongParser implements SequentialParser {
                 openingOnes.push(Couple.of(i, numCanStart));
                 i += numCanStart;
             }
-        }
-
-        if (!delegateIndices.isEmpty()) {
-            result.addAll(parse(tokens, ParserUtil.indicesToTextRanges(delegateIndices)));
         }
 
         return result;
