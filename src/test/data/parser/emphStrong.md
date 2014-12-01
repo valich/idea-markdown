@@ -4,6 +4,8 @@
 
 ***emph* in strong**
 
+*olo lo**ol olo*
+
 From 0.9 spec:
 
 R1: a * foo bar*
