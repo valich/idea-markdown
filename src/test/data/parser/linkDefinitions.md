@@ -36,3 +36,7 @@ Foo
 [baz]: /baz-url
 
 > [foo]: /url
+
+[*foo*]: /url "title"
+
+[foo`]: /url "tit`le"
