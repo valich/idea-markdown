@@ -32,10 +32,6 @@ import net.nicoulaj.idea.markdown.lang.parser.MarkdownConstraints;
 import net.nicoulaj.idea.markdown.lang.parser.MarkdownParserUtil;
 import net.nicoulaj.idea.markdown.lang.parser.MarkerBlock;
 import net.nicoulaj.idea.markdown.lang.parser.markerblocks.*;
-import net.nicoulaj.idea.markdown.lang.parser.markerblocks.inline.CodeSpanMarkerBlock;
-import net.nicoulaj.idea.markdown.lang.parser.markerblocks.inline.EmphStrongMarkerBlock;
-import net.nicoulaj.idea.markdown.lang.parser.markerblocks.inline.LinkDefinitionMarkerBlock;
-import net.nicoulaj.idea.markdown.lang.parser.markerblocks.inline.LinkLabelMarkerBlock;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -113,64 +109,24 @@ public class CommonMarkMarkerProcessor extends FixedPriorityListMarkerProcessor 
         }
         else {
             LOG.assertTrue(tokenType != MarkdownTokenTypes.EOL);
-            ParagraphMarkerBlock paragraphToUse = paragraph;
+            ParagraphMarkerBlock paragraphToUse;
 
             if (paragraph == null) {
-                paragraphToUse = new ParagraphMarkerBlock(newConstraints, builder);
+                paragraphToUse = new ParagraphMarkerBlock(newConstraints, builder, tokensCache);
                 result.add(paragraphToUse);
 
                 if (isAtLineStart(builder)) {
                     result.add(new SetextHeaderMarkerBlock(newConstraints, builder.mark()));
 
                 }
-                addLinkDefinitionIfAny(builder, result, newConstraints, paragraphToUse);
+//                addLinkDefinitionIfAny(builder, result, newConstraints, paragraphToUse);
             }
 
-            addInlineMarkerBlocks(result, paragraphToUse, builder, tokenType);
+//            addInlineMarkerBlocks(result, paragraphToUse, builder, tokenType);
         }
 
         return result.toArray(new MarkerBlock[result.size()]);
     }
-
-    private void addLinkDefinitionIfAny(PsiBuilder builder,
-                                       List<MarkerBlock> result,
-                                       MarkdownConstraints newConstraints,
-                                       ParagraphMarkerBlock paragraphToUse) {
-        if (builder.getTokenType() != MarkdownTokenTypes.LBRACKET) {
-            return;
-        }
-
-        final PsiBuilder.Marker definitionMarker = builder.mark();
-
-        final LinkLabelMarkerBlock linkLabelMarkerBlock =
-                new LinkLabelMarkerBlock(newConstraints, builder.mark(), paragraphToUse.getInlineMarkerManager());
-        result.add(new LinkDefinitionMarkerBlock(newConstraints,
-                                                 definitionMarker,
-                                                 paragraphToUse.getInlineMarkerManager(),
-                                                 linkLabelMarkerBlock));
-        result.add(linkLabelMarkerBlock);
-    }
-
-    protected void addInlineMarkerBlocks(@NotNull List<MarkerBlock> result,
-                                         @NotNull ParagraphMarkerBlock paragraphToUse,
-                                         @NotNull PsiBuilder builder,
-                                         @NotNull IElementType tokenType) {
-        if (tokenType == MarkdownTokenTypes.EMPH) {
-            final MarkerBlock lastBlock = getLastBlock();
-            final EmphStrongMarkerBlock prevBlock = lastBlock instanceof EmphStrongMarkerBlock
-                                                    ? ((EmphStrongMarkerBlock) lastBlock)
-                                                    : null;
-            result.add(new EmphStrongMarkerBlock(getCurrentConstraints(),
-                                                 builder,
-                                                 paragraphToUse.getInlineMarkerManager(),
-                                                 prevBlock));
-        }
-        else if (tokenType == MarkdownTokenTypes.BACKTICK
-                 || tokenType == MarkdownTokenTypes.ESCAPED_BACKTICKS && builder.getTokenText().length() > 2) {
-            result.add(new CodeSpanMarkerBlock(getCurrentConstraints(), builder, paragraphToUse.getInlineMarkerManager()));
-        }
-    }
-
 
     @Contract(pure=true)
     @Nullable

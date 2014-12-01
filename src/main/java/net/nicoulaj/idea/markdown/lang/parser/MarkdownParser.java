@@ -56,8 +56,10 @@ public class MarkdownParser implements PsiParser {
      */
     @NotNull
     public ASTNode parse(IElementType root, PsiBuilder builder) {
+        TokensCache tokensCache = new TokensCache(builder);
+        markerProcessor.setTokensCache(tokensCache);
+
         PsiBuilder.Marker rootMarker = builder.mark();
-        builder.setDebugMode(true);
 
         while (!builder.eof()) {
             final IElementType tokenType = builder.getTokenType();

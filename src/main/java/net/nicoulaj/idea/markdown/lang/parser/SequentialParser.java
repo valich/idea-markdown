@@ -20,9 +20,26 @@
  */
 package net.nicoulaj.idea.markdown.lang.parser;
 
+import com.intellij.openapi.util.TextRange;
+import com.intellij.psi.tree.IElementType;
 import org.jetbrains.annotations.NotNull;
 
-public interface InlineStructureHolder {
-    @NotNull
-    InlineMarkerManager getInlineMarkerManager();
+import java.util.Collection;
+
+public interface SequentialParser {
+
+    Collection<Node> parse(@NotNull TokensCache tokens, @NotNull Collection<TextRange> rangesToGlue);
+
+    class Node {
+        @NotNull
+        public final TextRange range;
+        @NotNull
+        public final IElementType type;
+
+        public Node(@NotNull TextRange range, @NotNull IElementType type) {
+            this.range = range;
+            this.type = type;
+        }
+    }
+
 }

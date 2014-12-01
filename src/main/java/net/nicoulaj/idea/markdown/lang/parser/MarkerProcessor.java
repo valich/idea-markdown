@@ -45,6 +45,8 @@ public abstract class MarkerProcessor {
     @NotNull
     private final TreeMap<Integer, MarkerBlock.ProcessingResult> postponedActions = ContainerUtil.newTreeMap();
 
+    protected TokensCache tokensCache;
+
     @Nullable
     private List<Integer> cachedPermutation = null;
 
@@ -94,6 +96,9 @@ public abstract class MarkerProcessor {
         }
     }
 
+    public void setTokensCache(TokensCache tokensCache) {
+        this.tokensCache = tokensCache;
+    }
 
     private void processPostponedActions() {
         while (!postponedActions.isEmpty()) {

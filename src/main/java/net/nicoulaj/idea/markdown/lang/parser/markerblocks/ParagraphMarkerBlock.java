@@ -21,22 +21,34 @@
 package net.nicoulaj.idea.markdown.lang.parser.markerblocks;
 
 import com.intellij.lang.PsiBuilder;
+import com.intellij.openapi.util.TextRange;
 import com.intellij.psi.tree.IElementType;
 import net.nicoulaj.idea.markdown.lang.MarkdownElementTypes;
 import net.nicoulaj.idea.markdown.lang.MarkdownTokenTypeSets;
 import net.nicoulaj.idea.markdown.lang.MarkdownTokenTypes;
 import net.nicoulaj.idea.markdown.lang.parser.*;
+import net.nicoulaj.idea.markdown.lang.parser.sequentialparsers.BacktickParser;
 import org.jetbrains.annotations.NotNull;
 
-public class ParagraphMarkerBlock extends MarkerBlockImpl implements InlineStructureHolder {
+import java.util.Collections;
+
+public class ParagraphMarkerBlock extends MarkerBlockImpl {
     @NotNull
     private final PsiBuilder builder;
 
-    private InlineMarkerManager myManager = null;
+    @NotNull
+    private final TokensCache tokensCache;
+    private final PsiBuilder.Marker rollbackMarker;
+    private final int startPosition;
 
-    public ParagraphMarkerBlock(@NotNull MarkdownConstraints myConstraints, @NotNull PsiBuilder builder) {
+    public ParagraphMarkerBlock(@NotNull MarkdownConstraints myConstraints,
+                                @NotNull PsiBuilder builder,
+                                @NotNull TokensCache tokensCache) {
         super(myConstraints, builder.mark(), MarkdownTokenTypes.EOL);
         this.builder = builder;
+        this.tokensCache = tokensCache;
+        rollbackMarker = builder.mark();
+        startPosition = tokensCache.calcCurrentBuilderPosition(builder);
     }
 
     @NotNull @Override protected ClosingAction getDefaultAction() {
@@ -79,17 +91,30 @@ public class ParagraphMarkerBlock extends MarkerBlockImpl implements InlineStruc
     }
 
     @Override public boolean acceptAction(@NotNull ClosingAction action) {
-        if (action != ClosingAction.NOTHING && myManager != null) {
+        if (action != ClosingAction.NOTHING) {
             if (action == ClosingAction.DONE || action == ClosingAction.DEFAULT) {
-                myManager.flushAllClosedMarkers();
+                int endPosition = tokensCache.calcCurrentBuilderPosition(builder);
+
+                rollbackMarker.rollbackTo();
+                ParserUtil.flushMarkers(
+                        builder,
+                        new BacktickParser().parse(tokensCache,
+                                                            Collections.singleton(TextRange.create(startPosition,
+                                                                                                   endPosition))),
+                        startPosition,
+                        endPosition
+                );
+
+//                myManager.flushAllClosedMarkers();
             }
             else {
+                rollbackMarker.drop();
 //                assert false;
                 // Actually, this practically means that a setext header is here,
                 // and inline structure should be closed and put into the tree
                 // anyway. So it's ok to flush markers in this way, too.
                 // TODO (to be fixed, of course)
-                myManager.flushAllClosedMarkers();
+//                myManager.flushAllClosedMarkers();
             }
         }
 
@@ -100,11 +125,4 @@ public class ParagraphMarkerBlock extends MarkerBlockImpl implements InlineStruc
         return MarkdownElementTypes.PARAGRAPH;
     }
 
-    @NotNull
-    @Override public InlineMarkerManager getInlineMarkerManager() {
-        if (myManager == null) {
-            myManager = new InlineMarkerManager(builder);
-        }
-        return myManager;
-    }
 }
