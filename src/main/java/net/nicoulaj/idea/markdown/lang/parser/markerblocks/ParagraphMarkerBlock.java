@@ -30,6 +30,7 @@ import net.nicoulaj.idea.markdown.lang.parser.*;
 import net.nicoulaj.idea.markdown.lang.parser.sequentialparsers.AutolinkParser;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collection;
 import java.util.Collections;
 
 public class ParagraphMarkerBlock extends MarkerBlockImpl {
@@ -96,18 +97,22 @@ public class ParagraphMarkerBlock extends MarkerBlockImpl {
                 int endPosition = tokensCache.calcCurrentBuilderPosition(builder);
 
                 rollbackMarker.rollbackTo();
+                final Collection<SequentialParser.Node> results = new AutolinkParser().parse(tokensCache,
+                                                                                             Collections.singleton(
+                                                                                                     TextRange.create(
+                                                                                                             startPosition,
+                                                                                                             endPosition)));
                 ParserUtil.flushMarkers(
                         builder,
-                        new AutolinkParser().parse(tokensCache,
-                                                            Collections.singleton(TextRange.create(startPosition,
-                                                                                                   endPosition))),
+                        results,
                         startPosition,
                         endPosition
                 );
 
+                LOG.assertTrue(tokensCache.calcCurrentBuilderPosition(builder) == endPosition, "We have shifted builder! Bad inline ranges probably");
+
 //                myManager.flushAllClosedMarkers();
-            }
-            else {
+            } else {
                 rollbackMarker.drop();
 //                assert false;
                 // Actually, this practically means that a setext header is here,

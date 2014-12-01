@@ -51,14 +51,12 @@ public class EmphStrongParser implements SequentialParser {
         Stack<Couple<Integer>> openingOnes = ContainerUtil.newStack();
 
         for (int i = 0; i < indices.size(); ++i) {
-            int index = indices.get(i);
-
-            TokensCache.Iterator iterator = tokens.getIterator(index);
+            TokensCache.Iterator iterator = tokens.new ListIterator(indices, i);
             if (iterator.getType() != MarkdownTokenTypes.EMPH) {
                 continue;
             }
 
-            int numCanEnd = canEndNumber(iterator);
+            int numCanEnd = canEndNumber(tokens, iterator);
             if (numCanEnd != 0 && myType == getType(iterator) && !openingOnes.isEmpty()) {
                 while (numCanEnd > 0 && !openingOnes.isEmpty()) {
                     final Couple<Integer> lastOpening = openingOnes.pop();
@@ -80,7 +78,7 @@ public class EmphStrongParser implements SequentialParser {
                 continue;
             }
 
-            int numCanStart = canStartNumber(iterator);
+            int numCanStart = canStartNumber(tokens, iterator);
             if (numCanStart != 0) {
                 if (myType == 0) {
                     myType = getType(iterator);
@@ -100,10 +98,9 @@ public class EmphStrongParser implements SequentialParser {
         return result;
     }
 
-    private int canStartNumber(@NotNull TokensCache.Iterator info) {
+    private int canStartNumber(TokensCache tokens, @NotNull TokensCache.Iterator info) {
         if (getType(info) == ITALIC && info.rawLookup(-1) != null) {
-            String text = info.rollback().getText();
-            if (Character.isLetterOrDigit(text.charAt(text.length() - 1))) {
+            if (Character.isLetterOrDigit(tokens.getRawCharAt(info.getStart() - 1))) {
                 return 0;
             }
         }
@@ -121,14 +118,15 @@ public class EmphStrongParser implements SequentialParser {
         return 50;
     }
 
-    private int canEndNumber(@NotNull TokensCache.Iterator info) {
+    private int canEndNumber(TokensCache tokens, @NotNull TokensCache.Iterator info) {
         if (ParserUtil.isWhitespace(info, -1)) {
             return 0;
         }
 
         for (int i = 0; i < 50; ++i) {
             if (info.rawLookup(1) != MarkdownTokenTypes.EMPH || getType(info) != getType(info.advance())) {
-                if (getType(info) == ITALIC && info.rawLookup(1) != null && Character.isLetterOrDigit(info.advance().getText().charAt(0))) {
+                if (getType(info) == ITALIC
+                    && Character.isLetterOrDigit(tokens.getRawCharAt(info.getEnd()))) {
                     return 0;
                 }
                 return i + 1;

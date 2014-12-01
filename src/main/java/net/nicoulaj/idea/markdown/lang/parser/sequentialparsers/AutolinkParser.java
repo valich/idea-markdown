@@ -40,25 +40,23 @@ public class AutolinkParser implements SequentialParser {
         List<Integer> indices = ParserUtil.textRangesToIndices(rangesToGlue);
 
         for (int i = 0; i < indices.size(); ++i) {
-            int index = indices.get(i);
-            TokensCache.Iterator iterator = tokens.getIterator(index);
+            TokensCache.Iterator iterator = tokens.new ListIterator(indices, i);
 
             if (iterator.getType() == MarkdownTokenTypes.LT && iterator.rawLookup(1) == MarkdownTokenTypes.AUTOLINK) {
                 final int start = i;
                 while (iterator.getType() != MarkdownTokenTypes.GT) {
                     iterator = iterator.advance();
                     i++;
-                    index++;
                 }
                 result.add(new Node(TextRange.create(indices.get(start), indices.get(i) + 1), MarkdownElementTypes.AUTOLINK));
             }
             else {
-                delegateIndices.add(index);
+                delegateIndices.add(indices.get(i));
             }
         }
 
         if (!delegateIndices.isEmpty()) {
-            result.addAll(new BacktickParser().parse(tokens, ParserUtil.indicesToTextRanges(delegateIndices)));
+            result.addAll(new LinkDefinitionParser().parse(tokens, ParserUtil.indicesToTextRanges(delegateIndices)));
         }
         return result;
     }

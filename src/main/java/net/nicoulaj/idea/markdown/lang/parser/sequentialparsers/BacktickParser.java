@@ -41,20 +41,19 @@ public class BacktickParser implements SequentialParser {
         List<Integer> delegateIndices = ContainerUtil.newArrayList();
 
         for (int i = 0; i < indices.size(); ++i) {
-            int index = indices.get(i);
-            TokensCache.Iterator iterator = tokens.getIterator(index);
+            TokensCache.Iterator iterator = tokens.new ListIterator(indices, i);
             if (iterator.getType() == MarkdownTokenTypes.BACKTICK || iterator.getType() ==
                                                                      MarkdownTokenTypes.ESCAPED_BACKTICKS) {
 
                 int j = findOfSize(tokens, indices, i + 1, getLength(iterator, true));
 
                 if (j != -1) {
-                    result.add(new Node(TextRange.create(index, indices.get(j) + 1), MarkdownElementTypes.CODE_SPAN));
+                    result.add(new Node(TextRange.create(indices.get(i), indices.get(j) + 1), MarkdownElementTypes.CODE_SPAN));
                     i = j;
                     continue;
                 }
             }
-            delegateIndices.add(index);
+            delegateIndices.add(indices.get(i));
         }
 
         if (!delegateIndices.isEmpty()) {
@@ -66,8 +65,7 @@ public class BacktickParser implements SequentialParser {
 
     private int findOfSize(@NotNull TokensCache tokens, @NotNull List<Integer> indices, int from, int length) {
         for (int i = from; i < indices.size(); ++i) {
-            int index = indices.get(i);
-            TokensCache.Iterator iterator = tokens.getIterator(index);
+            TokensCache.Iterator iterator = tokens.new ListIterator(indices, i);
             if (iterator.getType() != MarkdownTokenTypes.BACKTICK && iterator.getType() !=
                                                                      MarkdownTokenTypes.ESCAPED_BACKTICKS) {
                 continue;

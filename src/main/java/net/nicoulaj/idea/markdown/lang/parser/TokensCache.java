@@ -24,6 +24,7 @@ import com.intellij.lang.PsiBuilder;
 import com.intellij.psi.tree.IElementType;
 import com.intellij.util.containers.ContainerUtil;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
@@ -44,11 +45,6 @@ public class TokensCache {
         verify();
     }
 
-    @NotNull
-    public Iterator getIterator(int from) {
-        return new Iterator(from);
-    }
-
     public int calcCurrentBuilderPosition(@NotNull PsiBuilder builder) {
         if (builder.eof()) {
             return filteredTokens.size();
@@ -61,6 +57,13 @@ public class TokensCache {
             }
         }
         throw new IllegalStateException("could not be here");
+    }
+
+    public char getRawCharAt(int index) {
+        if (index < 0) return 0;
+        CharSequence originalText = builder.getOriginalText();
+        if (index >= originalText.length()) return 0;
+        return originalText.charAt(index);
     }
 
     private void cacheTokens() {
@@ -100,13 +103,47 @@ public class TokensCache {
         }
     }
 
+    private int getIndexForIterator(@NotNull List<Integer> indices, int startIndex) {
+        if (startIndex < 0) {
+            return -1;
+        }
+        if (startIndex >= indices.size()) {
+            return filteredTokens.size();
+        }
+        return indices.get(startIndex);
+    }
 
+
+    public class ListIterator extends Iterator {
+        @NotNull
+        private List<Integer> indices;
+
+        private int listIndex;
+
+        public ListIterator(@NotNull List<Integer> indices, int startIndex) {
+            super(getIndexForIterator(indices, startIndex));
+            this.indices = indices;
+            listIndex = startIndex;
+        }
+
+        @Override public Iterator advance() {
+            return new ListIterator(indices, listIndex + 1);
+        }
+
+        @Override public Iterator rollback() {
+            return new ListIterator(indices, listIndex - 1);
+        }
+    }
 
     public class Iterator {
         final int index;
 
         public Iterator(int startIndex) {
             index = startIndex;
+        }
+
+        public int getIndex() {
+            return index;
         }
 
         public Iterator advance() {
@@ -119,7 +156,14 @@ public class TokensCache {
 
         @NotNull
         private TokenInfo info(int rawSteps) {
-            int rawIndex = filteredTokens.get(index).rawIndex + rawSteps;
+            if (index < 0) {
+                return new TokenInfo(null, 0, 0, 0, 0);
+            }
+            else if (index >= filteredTokens.size()) {
+                return new TokenInfo(null, builder.getOriginalText().length(), 0, 0, 0);
+            }
+
+            final int rawIndex = filteredTokens.get(index).rawIndex + rawSteps;
             if (rawIndex < 0) {
                 return new TokenInfo(null, 0, 0, 0, 0);
             }
@@ -130,7 +174,7 @@ public class TokensCache {
             return cachedTokens.get(rawIndex);
         }
 
-        @NotNull
+        @Nullable
         public IElementType getType() {
             return info(0).type;
         }
@@ -142,6 +186,10 @@ public class TokensCache {
 
         public int getStart() {
             return info(0).tokenStart;
+        }
+
+        public int getEnd() {
+            return info(0).tokenEnd;
         }
 
         public IElementType rawLookup(int steps) {
