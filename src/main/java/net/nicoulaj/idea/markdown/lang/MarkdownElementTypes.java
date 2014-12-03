@@ -47,6 +47,8 @@ public interface MarkdownElementTypes {
     IElementType LINK_LABEL = new MarkdownElementType("LINK_LABEL");
     IElementType LINK_DESTINATION = new MarkdownElementType("LINK_DESTINATION");
     IElementType LINK_TITLE = new MarkdownElementType("LINK_TITLE");
+    IElementType LINK_TEXT = new MarkdownElementType("LINK_TEXT");
+    IElementType INLINE_LINK = new MarkdownElementType("INLINE_LINK");
 
     IElementType AUTOLINK = new MarkdownElementType("AUTOLINK");
 
@@ -59,7 +61,6 @@ public interface MarkdownElementTypes {
     IElementType ATX_4 = new MarkdownElementType("ATX_4");
     IElementType ATX_5 = new MarkdownElementType("ATX_5");
     IElementType ATX_6 = new MarkdownElementType("ATX_6");
-
 
 
 }

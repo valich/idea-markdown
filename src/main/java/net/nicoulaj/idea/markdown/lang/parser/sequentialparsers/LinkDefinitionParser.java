@@ -56,7 +56,7 @@ public class LinkDefinitionParser implements SequentialParser {
         final int startIndex = iterator.getIndex();
 
 
-        if ((iterator = parseLinkLabel(result, delegateIndices, iterator)) == null) {
+        if ((iterator = LinkParserUtil.parseLinkLabel(result, delegateIndices, iterator)) == null) {
             return null;
         }
         if (iterator.rawLookup(1) != MarkdownTokenTypes.COLON) {
@@ -66,14 +66,14 @@ public class LinkDefinitionParser implements SequentialParser {
         if (iterator.getType() == MarkdownTokenTypes.EOL) {
             iterator = iterator.advance();
         }
-        if ((iterator = parseLinkDestination(result, iterator)) == null) {
+        if ((iterator = LinkParserUtil.parseLinkDestination(result, iterator)) == null) {
             return null;
         }
         iterator = iterator.advance();
         if (iterator.getType() == MarkdownTokenTypes.EOL) {
             iterator = iterator.advance();
         }
-        if ((iterator = parseLinkTitle(result, iterator)) == null) {
+        if ((iterator = LinkParserUtil.parseLinkTitle(result, iterator)) == null) {
             return null;
         }
 
@@ -86,89 +86,4 @@ public class LinkDefinitionParser implements SequentialParser {
         return iterator;
     }
 
-    private TokensCache.Iterator parseLinkTitle(Collection<Node> result, TokensCache.Iterator iterator) {
-        if (iterator.getType() == MarkdownTokenTypes.EOL) {
-            return null;
-        }
-
-        final int startIndex = iterator.getIndex();
-        final IElementType closingType;
-
-        if (iterator.getType() == MarkdownTokenTypes.SINGLE_QUOTE
-                || iterator.getType() == MarkdownTokenTypes.DOUBLE_QUOTE) {
-            closingType = iterator.getType();
-        }
-        else if (iterator.getType() == MarkdownTokenTypes.LPAREN) {
-            closingType = iterator.getType();
-        }
-        else {
-            return null;
-        }
-
-        iterator = iterator.advance();
-        while (iterator.getType() != null && iterator.getType() != closingType) {
-            iterator = iterator.advance();
-        }
-
-        if (iterator.getType() != null) {
-            result.add(new Node(TextRange.create(startIndex, iterator.getIndex() + 1), MarkdownElementTypes.LINK_TITLE));
-            return iterator;
-        }
-        return null;
-    }
-
-    private TokensCache.Iterator parseLinkLabel(@NotNull Collection<Node> result,
-                                   @NotNull List<Integer> delegateIndices,
-                                   @NotNull TokensCache.Iterator iterator) {
-
-        if (iterator.getType() != MarkdownTokenTypes.LBRACKET) {
-            return null;
-        }
-
-        final int startIndex = iterator.getIndex();
-
-        List<Integer> indicesToDelegate = ContainerUtil.newArrayList();
-
-        iterator = iterator.advance();
-        while (iterator.getType() != MarkdownTokenTypes.RBRACKET && iterator.getType() != null) {
-            indicesToDelegate.add(iterator.getIndex());
-            if (iterator.getType() == MarkdownTokenTypes.LBRACKET) {
-                break;
-            }
-            iterator = iterator.advance();
-        }
-
-        if (iterator.getType() == MarkdownTokenTypes.RBRACKET) {
-            result.add(new Node(TextRange.create(startIndex, iterator.getIndex() + 1), MarkdownElementTypes.LINK_LABEL));
-            delegateIndices.addAll(indicesToDelegate);
-            return iterator;
-        }
-        return null;
-    }
-
-    private TokensCache.Iterator parseLinkDestination(@NotNull Collection<Node> result,
-                                                      @NotNull TokensCache.Iterator iterator) {
-        if (iterator.getType() == MarkdownTokenTypes.EOL) {
-            return null;
-        }
-
-        final int startIndex = iterator.getIndex();
-        final boolean withBraces = iterator.getType() == MarkdownTokenTypes.LT;
-        if (withBraces) {
-            iterator = iterator.advance();
-        }
-
-        iterator.advance();
-        while (iterator.getType() != null &&
-               (withBraces && iterator.getType() != MarkdownTokenTypes.GT
-                || !withBraces && !ParserUtil.isWhitespace(iterator, 1))) {
-            iterator = iterator.advance();
-        }
-
-        if (iterator.getType() != null) {
-            result.add(new Node(TextRange.create(startIndex, iterator.getIndex() + 1), MarkdownElementTypes.LINK_DESTINATION));
-            return iterator;
-        }
-        return null;
-    }
 }

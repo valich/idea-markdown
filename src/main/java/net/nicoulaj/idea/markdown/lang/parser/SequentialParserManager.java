@@ -22,10 +22,7 @@ package net.nicoulaj.idea.markdown.lang.parser;
 
 import com.intellij.openapi.util.TextRange;
 import com.intellij.util.containers.ContainerUtil;
-import net.nicoulaj.idea.markdown.lang.parser.sequentialparsers.AutolinkParser;
-import net.nicoulaj.idea.markdown.lang.parser.sequentialparsers.BacktickParser;
-import net.nicoulaj.idea.markdown.lang.parser.sequentialparsers.EmphStrongParser;
-import net.nicoulaj.idea.markdown.lang.parser.sequentialparsers.LinkDefinitionParser;
+import net.nicoulaj.idea.markdown.lang.parser.sequentialparsers.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -40,6 +37,7 @@ public class SequentialParserManager {
                 new AutolinkParser(),
                 new BacktickParser(),
                 new LinkDefinitionParser(),
+                new InlineLinkParser(),
                 new EmphStrongParser()
         );
     }
