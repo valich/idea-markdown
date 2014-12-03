@@ -23,6 +23,8 @@ package net.nicoulaj.idea.markdown;
 import com.intellij.testFramework.ParsingTestCase;
 import net.nicoulaj.idea.markdown.lang.parser.MarkdownParserDefinition;
 
+import java.io.File;
+
 public class MarkdownParsingTest extends ParsingTestCase {
     public MarkdownParsingTest() {
         super("", "md", new MarkdownParserDefinition());
@@ -81,6 +83,6 @@ public class MarkdownParsingTest extends ParsingTestCase {
     }
 
     @Override protected String getTestDataPath() {
-        return "src/test/data/parser";
+        return new File("src/test/data/parser").getAbsolutePath();
     }
 }
