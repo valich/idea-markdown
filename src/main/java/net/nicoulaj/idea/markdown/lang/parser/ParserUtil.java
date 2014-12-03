@@ -54,6 +54,7 @@ public class ParserUtil {
         for (int i = 0; i < indices.size(); ++i) {
             if (i + 1 == indices.size() || indices.get(i) + 1 != indices.get(i + 1)) {
                 result.add(TextRange.create(indices.get(starting), indices.get(i) + 1));
+                starting = i + 1;
             }
         }
 
