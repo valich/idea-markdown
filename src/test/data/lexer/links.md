@@ -24,3 +24,11 @@ bar)
 [*foo\!*][bar]
 
 [foo <bar attr="](baz)">
+
+> [link](/url
+> "title")
+> [link](
+> /url
+> 'title'
+> )
+> [link](/url (title))

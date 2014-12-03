@@ -34,15 +34,8 @@ import java.util.Stack;
 
   private Paragraph paragraph = new Paragraph();
   private BlockQuotes blockQuotes = new BlockQuotes();
-  private LinkDef linkDef = new LinkDef();
   private CodeFence codeFence = new CodeFence();
   private ParseDelimited parseDelimited = new ParseDelimited();
-  private ParseUndelimited parseUndelimited = new ParseUndelimited();
-
-  private static class ParseUndelimited {
-    IElementType returnType = null;
-    int lengthToConsume = 0;
-  }
 
   private static class ParseDelimited {
     char exitChar = 0;
@@ -106,18 +99,6 @@ import java.util.Stack;
     }
   }
 
-  private String getTagNameFromTagEnd() {
-    int until = 1;
-
-    char c = 0;
-    do {
-      until++;
-      c = yycharat(until);
-    } while (Character.isLetter(c) || Character.isDigit(c));
-
-    return yytext().toString().substring(2, until);
-  }
-
   private static IElementType getDelimiterTokenType(char c) {
     switch (c) {
       case '"': return Token.DOUBLE_QUOTE;
@@ -130,12 +111,6 @@ import java.util.Stack;
       case '>': return Token.GT;
       default: return Token.BAD_CHARACTER;
     }
-  }
-
-  private void startCodeSpan() {
-    stateStack.push(yystate());
-    codeFence.spanLength = yylength();
-    yybegin(CODE_SPAN);
   }
 
   private IElementType parseDelimited(IElementType contentsType, boolean allowInlines) {
@@ -153,24 +128,6 @@ import java.util.Stack;
 
     yypushback(yylength() - 1);
     return getDelimiterTokenType(first);
-  }
-
-  private void parseUndelimited(IElementType returnType) {
-    parseUndelimited.returnType = returnType;
-    parseUndelimited.lengthToConsume = yylength();
-
-    yypushback(yylength());
-    stateStack.push(yystate());
-
-    yybegin(PARSE_UNDELIMITED);
-  }
-
-  private IElementType undelimitedOut(IElementType returnType) {
-    parseUndelimited.lengthToConsume -= yylength();
-    if (parseUndelimited.lengthToConsume <= 0) {
-      yybegin(stateStack.pop());
-    }
-    return returnType;
   }
 
   private void increaseIndent(int delta) {
@@ -251,13 +208,6 @@ import java.util.Stack;
     return HtmlHelper.BLOCK_TAGS.contains(tagName.toLowerCase());
   }
 
-  private void processTagStart() {
-  }
-
-  private boolean processTagEnd(String tagName) {
-    return true;
-  }
-
   private boolean canInline() {
     return yystate() == AFTER_LINE_START || yystate() == PARSE_DELIMITED && parseDelimited.inlinesAllowed;
   }
@@ -275,15 +225,10 @@ DIGIT = [0-9]
 ALPHANUM = [a-zA-Z0-9]
 WHITE_SPACE = [ \t\f]
 EOL = "\n"|"\r"|"\r\n"
-EOL_AND_SPACES = {WHITE_SPACE}* ({EOL} {WHITE_SPACE}*)?
 
 DOUBLE_QUOTED_TEXT = \" (\\\" | [^\n\"])* \"
 SINGLE_QUOTED_TEXT = "'" (\\"'" | [^\n'])* "'"
 QUOTED_TEXT = {SINGLE_QUOTED_TEXT} | {DOUBLE_QUOTED_TEXT}
-
-LINK_DEST_CHAR = [^ \t\f\r\n()] | \\"(" | \\")"
-LINK_DESTINATION = "<" ([^\r\n<>] | \\"<" | \\">")* ">" | {LINK_DEST_CHAR}* ("(" {LINK_DEST_CHAR}* ")" {LINK_DEST_CHAR}*)*
-LINK_TITLE = {QUOTED_TEXT} | "(" (\\")" | [^)])* ")"
 
 HTML_COMMENT = "<!" "-"{2,4} ">" | "<!--" ([^-] | "-"[^-])* "-->"
 PROCESSING_INSTRUCTION = "<?" ([^?] | "?"[^>])* "?>"
@@ -306,9 +251,7 @@ SCHEME = [a-zA-Z]+
 AUTOLINK = "<" {SCHEME} ":" [^ \t\f\n<>]+ ">"
 EMAIL_AUTOLINK = "<" [a-zA-Z0-9.!#$%&'*+/=?\^_`{|}~-]+ "@"[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])? (\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)* ">"
 
-LINK_ID = [^\n\[]*
-
-%state HTML_BLOCK, TAG_START, AFTER_LINE_START, LINK, LINK_DEF, PARSE_DELIMITED, PARSE_UNDELIMITED, CODE, CODE_FENCE, CODE_SPAN, LINK_REF
+%state HTML_BLOCK, TAG_START, AFTER_LINE_START, PARSE_DELIMITED, CODE, CODE_FENCE
 
 %%
 
@@ -446,14 +389,13 @@ LINK_ID = [^\n\[]*
   }
 
   // Escaping
-  \\[\\`*_{}\[\]()#+-.!] {
+  \\[\\`*_{}\[\]()#+-.,!:@#$%&~<>/] {
     return getReturnGeneralized(Token.TEXT);
   }
 
   // Backticks (code span)
   "`"+ {
     if (canInline()) {
-      //startCodeSpan();
       return Token.BACKTICK;
     }
     return parseDelimited.returnType;
@@ -475,20 +417,6 @@ LINK_ID = [^\n\[]*
 
 }
 
-<PARSE_UNDELIMITED> {
-
-  "`"+ {
-    return undelimitedOut(Token.BACKTICK);
-  }
-
-  // Escaping
-  \\[\\`*_{}\[\]()#+-.!] |
-  {EOL} |
-  . {
-    return undelimitedOut(parseUndelimited.returnType);
-  }
-}
-
 <AFTER_LINE_START> {
 
   // atx header end
@@ -500,42 +428,16 @@ LINK_ID = [^\n\[]*
   }
 
   {WHITE_SPACE}+ {
-    return Token.TEXT;
+    return Token.WHITE_SPACE;
   }
 
-  // Links
-  "!"? "[" {LINK_ID} "]" / {WHITE_SPACE}* "(" {WHITE_SPACE}* {LINK_DESTINATION} {WHITE_SPACE}* ({WHITE_SPACE} {LINK_TITLE} {WHITE_SPACE}*)? ")" {
-    if (yycharat(0) == '!') {
-      yypushback(yylength() - 1);
-      return Token.EXCLAMATION_MARK;
-    }
-
-    linkDef.wasUrl = false;
-    linkDef.wasParen = false;
-
-    yybegin(LINK);
-    return parseDelimited(Token.LINK_ID, true);
+  \" | "'"| "\\" | "(" | ")" | "[" | "]" | "<" | ">" {
+    return getDelimiterTokenType(yycharat(0));
   }
+  ":" { return Token.COLON; }
+  "!" { return Token.EXCLAMATION_MARK; }
 
-  "!"? "[" {LINK_ID} "]" / {WHITE_SPACE}* "[" {LINK_ID} "]" {
-      if (yycharat(0) == '!') {
-        yypushback(yylength() - 1);
-        return Token.EXCLAMATION_MARK;
-      }
 
-      yybegin(LINK_REF);
-      return parseDelimited(Token.LINK_ID, true);
-  }
-
-  "[" {LINK_ID} "]" / ":" {
-    yybegin(LINK_DEF);
-    linkDef.wasUrl = false;
-    return parseDelimited(Token.LINK_ID, true);
-  }
-
-  "[" {LINK_ID} "]" / ({WHITE_SPACE} | {EOL}) {
-    return parseDelimited(Token.LINK_ID, true);
-  }
 
   {WHITE_SPACE}* ({EOL} {WHITE_SPACE}*)+ {
     int lastSpaces = yytext().toString().indexOf("\n");
@@ -559,104 +461,6 @@ LINK_ID = [^\n\[]*
 
   . { return Token.TEXT; }
 
-}
-
-<LINK_REF> {
-  {WHITE_SPACE}+ {
-    return Token.WHITE_SPACE;
-  }
-
-  "[" {LINK_ID} "]" {
-    popState();
-    return parseDelimited(Token.LINK_ID, true);
-  }
-
-  {EOL} | . {
-    return Token.BAD_CHARACTER;
-  }
-}
-
-<LINK, LINK_DEF> {
-  {LINK_TITLE} {
-    if (yystate() == LINK && yycharat(0) == '(' && !linkDef.wasParen) {
-      yypushback(yylength() - 1);
-      linkDef.wasParen = true;
-      return Token.LPAREN;
-    }
-
-    if (!linkDef.wasUrl) {
-      linkDef.wasUrl = true;
-      return Token.URL;
-    }
-
-    if (yystate() == LINK_DEF) {
-      yybegin(YYINITIAL);
-    }
-    return parseDelimited(Token.LINK_TITLE, false);
-  }
-
-  {LINK_DESTINATION} {
-    if (yystate() == LINK && yycharat(0) == '(' && !linkDef.wasParen) {
-      yypushback(yylength() - 1);
-      linkDef.wasParen = true;
-      return Token.LPAREN;
-    }
-
-    if (yycharat(0) == '<') {
-      return parseDelimited(Token.URL, false);
-    }
-    else {
-      if (!linkDef.wasUrl) {
-        if (yycharat(0) == ':') {
-          yypushback(yylength() - 1);
-          return Token.COLON;
-        }
-        linkDef.wasUrl = true;
-        parseUndelimited(Token.URL);
-        continue;
-      }
-
-      if (yystate() == LINK_DEF) {
-        yybegin(YYINITIAL);
-      }
-      yypushback(yylength());
-    }
-  }
-}
-
-<LINK> {
-  {WHITE_SPACE}+ {
-    return Token.WHITE_SPACE;
-  }
-
-  "[" {LINK_ID} "]" {
-    yybegin(AFTER_LINE_START);
-    return parseDelimited(Token.LINK_ID, true);
-  }
-
-  "(" {
-    linkDef.wasParen = true;
-    return Token.LPAREN;
-  }
-  ")" {
-    yybegin(AFTER_LINE_START);
-    return Token.RPAREN;
-  }
-
-  {EOL} | . { resetState(); }
-}
-
-<LINK_DEF> {
-  {WHITE_SPACE}+ { return Token.WHITE_SPACE; }
-
-  {EOL} { return Token.EOL; }
-
-  ":" { return Token.COLON; }
-
-  {EOL} {WHITE_SPACE}* {EOL} {
-    resetState();
-  }
-  . { resetState(); }
 }
 
 <PARSE_DELIMITED> {
@@ -688,21 +492,6 @@ LINK_ID = [^\n\[]*
   }
 
   {EOL} | . { return Token.CODE; }
-}
-
-<CODE_SPAN> {
-  "`"+ {
-    if (yylength() == codeFence.spanLength) {
-      yybegin(stateStack.pop());
-      return Token.BACKTICK;
-    }
-
-    return Token.CODE;
-  }
-
-  {EOL} | [^`]+ {
-    return Token.CODE;
-  }
 }
 
 <CODE_FENCE> {

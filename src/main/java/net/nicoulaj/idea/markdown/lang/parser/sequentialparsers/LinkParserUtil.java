@@ -48,22 +48,35 @@ public class LinkParserUtil {
             iterator = iterator.advance();
         }
 
+        boolean hasOpenedParentheses = false;
         while (iterator.getType() != null) {
             if (withBraces && iterator.getType() == MarkdownTokenTypes.GT) {
                 break;
             }
-            IElementType next = iterator.rawLookup(1);
-            if (!withBraces && (ParserUtil.isWhitespace(iterator, 1)
-                                || next == null
-                                || next == MarkdownTokenTypes.LPAREN
-                                || next == MarkdownTokenTypes.RPAREN)) {
-                break;
+            else if (!withBraces) {
+                if (iterator.getType() == MarkdownTokenTypes.LPAREN) {
+                    if (hasOpenedParentheses) {
+                        break;
+                    }
+                    hasOpenedParentheses = true;
+                }
+
+                final IElementType next = iterator.rawLookup(1);
+                if (ParserUtil.isWhitespace(iterator, 1) || next == null) {
+                    break;
+                }
+                else if (next == MarkdownTokenTypes.RPAREN) {
+                    if (!hasOpenedParentheses) {
+                        break;
+                    }
+                    hasOpenedParentheses = false;
+                }
             }
 
             iterator = iterator.advance();
         }
 
-        if (iterator.getType() != null) {
+        if (iterator.getType() != null && !hasOpenedParentheses) {
             result.add(new SequentialParser.Node(TextRange.create(startIndex, iterator.getIndex() + 1), MarkdownElementTypes.LINK_DESTINATION));
             return iterator;
         }
