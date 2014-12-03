@@ -27,7 +27,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
 public class SequentialParserManager {
@@ -44,11 +43,11 @@ public class SequentialParserManager {
 
     @NotNull
     public Collection<SequentialParser.Node> runParsingSequence(@NotNull TokensCache tokensCache,
-                                                                @NotNull TextRange rangeToParse) {
+                                                                @NotNull Collection<TextRange> rangesToParse) {
         final Collection<SequentialParser.Node> result = ContainerUtil.newArrayList();
 
         Collection<Collection<TextRange>> parsingSpaces = ContainerUtil.newArrayList();
-        parsingSpaces.add(Collections.singleton(rangeToParse));
+        parsingSpaces.add(rangesToParse);
 
         for (SequentialParser sequentialParser : getParserSequence()) {
             Collection<Collection<TextRange>> nextLevelSpaces = new ArrayList<Collection<TextRange>>();

@@ -97,7 +97,7 @@ public class ParagraphMarkerBlock extends MarkerBlockImpl {
                 rollbackMarker.rollbackTo();
                 final Collection<SequentialParser.Node> results = new SequentialParserManager().runParsingSequence(
                         tokensCache,
-                        TextRange.create(startPosition, endPosition));
+                        ParserUtil.filterBlockquotes(tokensCache, TextRange.create(startPosition, endPosition)));
 
                 ParserUtil.flushMarkers(builder, results, startPosition, endPosition);
 

@@ -110,6 +110,26 @@ public class ParserUtil {
         }
     }
 
+    @NotNull
+    public static Collection<TextRange> filterBlockquotes(@NotNull TokensCache tokensCache, @NotNull TextRange textRange) {
+        Collection<TextRange> result = ContainerUtil.newArrayList();
+        int lastStart = textRange.getStartOffset();
+
+        final int R = textRange.getEndOffset();
+        for (int i = lastStart; i < R; ++i) {
+            if (tokensCache.new Iterator(i).getType() == MarkdownTokenTypes.BLOCK_QUOTE) {
+                if (lastStart < i) {
+                    result.add(TextRange.create(lastStart, i));
+                }
+                lastStart = i + 1;
+            }
+        }
+        if (lastStart < R) {
+            result.add(TextRange.create(lastStart, R));
+        }
+        return result;
+    }
+
     private static class MyEvent implements Comparable<MyEvent> {
         final int position;
         final SequentialParser.Node info;
