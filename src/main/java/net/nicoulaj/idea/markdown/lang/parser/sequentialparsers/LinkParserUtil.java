@@ -106,7 +106,12 @@ public class LinkParserUtil {
         }
 
         if (iterator.getType() == MarkdownTokenTypes.RBRACKET) {
-            result.add(new SequentialParser.Node(TextRange.create(startIndex, iterator.getIndex() + 1), MarkdownElementTypes.LINK_LABEL));
+            int endIndex = iterator.getIndex();
+            if (endIndex == startIndex + 1) {
+                return null;
+            }
+
+            result.add(new SequentialParser.Node(TextRange.create(startIndex, endIndex + 1), MarkdownElementTypes.LINK_LABEL));
             delegateIndices.addAll(indicesToDelegate);
             return iterator;
         }

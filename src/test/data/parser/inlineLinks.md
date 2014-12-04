@@ -19,10 +19,6 @@ bar)
 [link](/url 'title')
 [link](/url (title))
 
-[foo][bar]
-
-[*foo\!*][bar]
-
 [foo <bar attr="](baz)">
 
 > [link](/url

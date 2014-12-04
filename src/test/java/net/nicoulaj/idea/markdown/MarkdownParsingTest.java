@@ -78,7 +78,11 @@ public class MarkdownParsingTest extends ParsingTestCase {
         defaultTest();
     }
 
-    public void testLinks() {
+    public void testInlineLinks() {
+        defaultTest();
+    }
+
+    public void testReferenceLinks() {
         defaultTest();
     }
 

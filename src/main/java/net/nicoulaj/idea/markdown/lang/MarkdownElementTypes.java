@@ -49,6 +49,8 @@ public interface MarkdownElementTypes {
     IElementType LINK_TITLE = new MarkdownElementType("LINK_TITLE");
     IElementType LINK_TEXT = new MarkdownElementType("LINK_TEXT");
     IElementType INLINE_LINK = new MarkdownElementType("INLINE_LINK");
+    IElementType FULL_REFERENCE_LINK = new MarkdownElementType("FULL_REFERENCE_LINK");
+    IElementType SHORT_REFERENCE_LINK = new MarkdownElementType("SHORT_REFERENCE_LINK");
 
     IElementType AUTOLINK = new MarkdownElementType("AUTOLINK");
 

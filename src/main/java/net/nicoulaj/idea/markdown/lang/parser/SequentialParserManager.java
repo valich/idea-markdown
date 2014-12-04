@@ -37,6 +37,7 @@ public class SequentialParserManager {
                 new BacktickParser(),
                 new LinkDefinitionParser(),
                 new InlineLinkParser(),
+                new ReferenceLinkParser(),
                 new EmphStrongParser()
         );
     }
