@@ -133,6 +133,15 @@ public class TokensCache {
         @Override public Iterator rollback() {
             return new ListIterator(indices, listIndex - 1);
         }
+
+        @Override public IElementType rawLookup(int steps) {
+            if (steps > 0 && advance().getIndex() != super.advance().getIndex()
+                    || steps < 0 && rollback().getIndex() != super.rollback().getIndex()) {
+                return null;
+            }
+
+            return super.rawLookup(steps);
+        }
     }
 
     public class Iterator {
