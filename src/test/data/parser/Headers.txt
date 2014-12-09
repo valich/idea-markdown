@@ -133,6 +133,19 @@ Markdown:MARKDOWN_FILE
     Markdown:ATX_HEADER('######')
   Markdown:EOL('\n')
   Markdown:EOL('\n')
+  Markdown:ATX_2
+    Markdown:ATX_HEADER('##')
+    WHITE_SPACE(' ')
+    Markdown:TEXT('atx h2 with')
+    WHITE_SPACE(' ')
+    Markdown:EMPH
+      Markdown:EMPH('*')
+      Markdown:TEXT('emph')
+      Markdown:EMPH('*')
+    WHITE_SPACE(' ')
+    Markdown:ATX_HEADER('##')
+  Markdown:EOL('\n')
+  Markdown:EOL('\n')
   Markdown:ATX_3
     Markdown:ATX_HEADER('###')
     WHITE_SPACE(' ')
@@ -182,3 +195,9 @@ Markdown:MARKDOWN_FILE
     Markdown:"('"')
     Markdown:TEXT('/')
     Markdown:>('>')
+  Markdown:EOL('\n')
+  Markdown:EOL('\n')
+  Markdown:ATX_2
+    Markdown:ATX_HEADER('##')
+    WHITE_SPACE(' ')
+    Markdown:TEXT('atx in the end')

@@ -47,6 +47,8 @@ atx headers:
 
 ### This is an H3 ######
 
+## atx h2 with *emph* ##
+
 ### foo ### b
 
     ## And this is not a header; it's a CODE
@@ -61,3 +63,5 @@ Foo *bar*
 <a title="a lot
 ---
 of dashes"/>
+
+## atx in the end
