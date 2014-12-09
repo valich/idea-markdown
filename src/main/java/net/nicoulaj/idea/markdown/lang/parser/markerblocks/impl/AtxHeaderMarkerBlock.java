@@ -20,23 +20,33 @@
  */
 package net.nicoulaj.idea.markdown.lang.parser.markerblocks.impl;
 
+import com.intellij.openapi.util.TextRange;
 import net.nicoulaj.idea.markdown.lang.IElementType;
 import net.nicoulaj.idea.markdown.lang.MarkdownElementTypes;
 import net.nicoulaj.idea.markdown.lang.MarkdownTokenTypes;
 import net.nicoulaj.idea.markdown.lang.parser.MarkdownConstraints;
 import net.nicoulaj.idea.markdown.lang.parser.ProductionHolder;
 import net.nicoulaj.idea.markdown.lang.parser.TokensCache;
-import net.nicoulaj.idea.markdown.lang.parser.markerblocks.MarkerBlockImpl;
+import net.nicoulaj.idea.markdown.lang.parser.markerblocks.InlineStructureHoldingMarkerBlock;
 import org.jetbrains.annotations.NotNull;
 
-public class AtxHeaderMarkerBlock extends MarkerBlockImpl {
+import java.util.Collection;
+import java.util.Collections;
+
+public class AtxHeaderMarkerBlock extends InlineStructureHoldingMarkerBlock {
     @NotNull
     private final IElementType myNodeType;
 
-    public AtxHeaderMarkerBlock(@NotNull MarkdownConstraints myConstraints, @NotNull ProductionHolder.Marker marker, int headerSize) {
-        super(myConstraints, marker, MarkdownTokenTypes.EOL);
+    private final int startPosition;
+
+    public AtxHeaderMarkerBlock(@NotNull MarkdownConstraints myConstraints,
+                                @NotNull TokensCache tokensCache,
+                                @NotNull ProductionHolder productionHolder,
+                                int headerSize) {
+        super(myConstraints, tokensCache, productionHolder, MarkdownTokenTypes.EOL);
 
         myNodeType = calcNodeType(headerSize);
+        startPosition = productionHolder.getCurrentPosition();
     }
 
     private static IElementType calcNodeType(int headerSize) {
@@ -68,5 +78,10 @@ public class AtxHeaderMarkerBlock extends MarkerBlockImpl {
 
     @NotNull @Override public IElementType getDefaultNodeType() {
         return myNodeType;
+    }
+
+    @NotNull @Override public Collection<TextRange> getRangesContainingInlineStructure() {
+        final int endPosition = productionHolder.getCurrentPosition();
+        return Collections.singletonList(TextRange.create(startPosition + 1, endPosition));
     }
 }

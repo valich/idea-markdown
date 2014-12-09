@@ -159,7 +159,8 @@ Markdown:MARKDOWN_FILE
   Markdown:EOL('\n')
   Markdown:EOL('\n')
   Markdown:SETEXT_1
-    Markdown:TEXT('Foo ')
+    Markdown:TEXT('Foo')
+    WHITE_SPACE(' ')
     Markdown:EMPH
       Markdown:EMPH('*')
       Markdown:TEXT('bar')

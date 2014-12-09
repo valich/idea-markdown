@@ -27,28 +27,20 @@ import net.nicoulaj.idea.markdown.lang.MarkdownTokenTypes;
 import net.nicoulaj.idea.markdown.lang.parser.MarkdownConstraints;
 import net.nicoulaj.idea.markdown.lang.parser.ProductionHolder;
 import net.nicoulaj.idea.markdown.lang.parser.TokensCache;
+import net.nicoulaj.idea.markdown.lang.parser.markerblocks.InlineStructureHoldingMarkerBlock;
 import net.nicoulaj.idea.markdown.lang.parser.markerblocks.MarkdownParserUtil;
-import net.nicoulaj.idea.markdown.lang.parser.markerblocks.MarkerBlockImpl;
-import net.nicoulaj.idea.markdown.lang.parser.sequentialparsers.SequentialParser;
-import net.nicoulaj.idea.markdown.lang.parser.sequentialparsers.SequentialParserManager;
 import net.nicoulaj.idea.markdown.lang.parser.sequentialparsers.SequentialParserUtil;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 
-public class ParagraphMarkerBlock extends MarkerBlockImpl {
-    @NotNull private final ProductionHolder productionHolder;
-
-    @NotNull
-    private final TokensCache tokensCache;
+public class ParagraphMarkerBlock extends InlineStructureHoldingMarkerBlock {
     private final int startPosition;
 
     public ParagraphMarkerBlock(@NotNull MarkdownConstraints myConstraints,
                                 @NotNull ProductionHolder productionHolder,
                                 @NotNull TokensCache tokensCache) {
-        super(myConstraints, productionHolder.new Marker(), MarkdownTokenTypes.EOL);
-        this.productionHolder = productionHolder;
-        this.tokensCache = tokensCache;
+        super(myConstraints, tokensCache, productionHolder, MarkdownTokenTypes.EOL);
         startPosition = productionHolder.getCurrentPosition();
     }
 
@@ -91,24 +83,12 @@ public class ParagraphMarkerBlock extends MarkerBlockImpl {
         return ProcessingResult.CANCEL;
     }
 
-    @Override public boolean acceptAction(@NotNull ClosingAction action) {
-        if (action != ClosingAction.NOTHING) {
-            if (action == ClosingAction.DONE || action == ClosingAction.DEFAULT) {
-                int endPosition = productionHolder.getCurrentPosition();
-
-                final Collection<SequentialParser.Node> results = new SequentialParserManager().runParsingSequence(
-                        tokensCache,
-                        SequentialParserUtil.filterBlockquotes(tokensCache, TextRange.create(startPosition, endPosition)));
-
-                productionHolder.addProduction(results);
-            }
-        }
-
-        return super.acceptAction(action);
-    }
-
     @NotNull @Override public IElementType getDefaultNodeType() {
         return MarkdownElementTypes.PARAGRAPH;
     }
 
+    @NotNull @Override public Collection<TextRange> getRangesContainingInlineStructure() {
+        final int endPosition = productionHolder.getCurrentPosition();
+        return SequentialParserUtil.filterBlockquotes(tokensCache, TextRange.create(startPosition, endPosition));
+    }
 }

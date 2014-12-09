@@ -156,9 +156,11 @@ Markdown:MARKDOWN_FILE
   Markdown:ATX_1
     Markdown:ATX_HEADER('#')
     WHITE_SPACE(' ')
-    Markdown:[('[')
-    Markdown:TEXT('Foo')
-    Markdown:](']')
+    Markdown:SHORT_REFERENCE_LINK
+      Markdown:LINK_LABEL
+        Markdown:[('[')
+        Markdown:TEXT('Foo')
+        Markdown:](']')
   Markdown:EOL('\n')
   Markdown:PARAGRAPH
     Markdown:SHORT_REFERENCE_LINK

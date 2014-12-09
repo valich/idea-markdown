@@ -102,7 +102,7 @@ public class CommonMarkMarkerProcessor extends FixedPriorityListMarkerProcessor 
         }
         else if (tokenType == MarkdownTokenTypes.ATX_HEADER && paragraph == null) {
             final String tokenText = iterator.getText();
-            result.add(new AtxHeaderMarkerBlock(newConstraints, productionHolder.mark(), tokenText.length()));
+            result.add(new AtxHeaderMarkerBlock(newConstraints, tokensCache, productionHolder, tokenText.length()));
         }
         else if (tokenType == MarkdownTokenTypes.CODE_FENCE_START) {
             result.add(new CodeFenceMarkerBlock(newConstraints, productionHolder.mark()));
@@ -116,7 +116,7 @@ public class CommonMarkMarkerProcessor extends FixedPriorityListMarkerProcessor 
                 result.add(paragraphToUse);
 
                 if (isAtLineStart(iterator)) {
-                    result.add(new SetextHeaderMarkerBlock(newConstraints, productionHolder.mark()));
+                    result.add(new SetextHeaderMarkerBlock(newConstraints, tokensCache, productionHolder));
 
                 }
 //                addLinkDefinitionIfAny(iterator, result, newConstraints, paragraphToUse);

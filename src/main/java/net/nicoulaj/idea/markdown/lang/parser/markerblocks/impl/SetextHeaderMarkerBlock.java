@@ -20,24 +20,37 @@
  */
 package net.nicoulaj.idea.markdown.lang.parser.markerblocks.impl;
 
+import com.intellij.openapi.util.TextRange;
 import net.nicoulaj.idea.markdown.lang.IElementType;
 import net.nicoulaj.idea.markdown.lang.MarkdownElementTypes;
 import net.nicoulaj.idea.markdown.lang.MarkdownTokenTypes;
 import net.nicoulaj.idea.markdown.lang.parser.MarkdownConstraints;
 import net.nicoulaj.idea.markdown.lang.parser.ProductionHolder;
 import net.nicoulaj.idea.markdown.lang.parser.TokensCache;
-import net.nicoulaj.idea.markdown.lang.parser.markerblocks.MarkerBlockImpl;
+import net.nicoulaj.idea.markdown.lang.parser.markerblocks.InlineStructureHoldingMarkerBlock;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-public class SetextHeaderMarkerBlock extends MarkerBlockImpl {
+public class SetextHeaderMarkerBlock extends InlineStructureHoldingMarkerBlock {
     @NotNull
     private IElementType myNodeType = MarkdownElementTypes.SETEXT_1;
 
-    public SetextHeaderMarkerBlock(@NotNull MarkdownConstraints myConstraints, @NotNull ProductionHolder.Marker marker) {
-        super(myConstraints, marker, setextSet());
+    private final int startPosition;
+
+    public SetextHeaderMarkerBlock(@NotNull MarkdownConstraints myConstraints,
+                                   @NotNull TokensCache tokensCache,
+                                   @NotNull ProductionHolder productionHolder) {
+        super(myConstraints, tokensCache, productionHolder, setextSet());
+        startPosition = productionHolder.getCurrentPosition();
+    }
+
+    @NotNull @Override public Collection<TextRange> getRangesContainingInlineStructure() {
+        final int endPosition = productionHolder.getCurrentPosition();
+        return Collections.singletonList(TextRange.create(startPosition, endPosition - 2));
     }
 
     private static Set<IElementType> setextSet() {
