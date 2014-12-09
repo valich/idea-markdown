@@ -24,6 +24,7 @@ import net.nicoulaj.idea.markdown.lang.IElementType;
 import net.nicoulaj.idea.markdown.lang.ast.ASTNode;
 import net.nicoulaj.idea.markdown.lang.ast.CompositeASTNode;
 import net.nicoulaj.idea.markdown.lang.ast.LeafASTNode;
+import net.nicoulaj.idea.markdown.lang.parser.sequentialparsers.SequentialParser;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;

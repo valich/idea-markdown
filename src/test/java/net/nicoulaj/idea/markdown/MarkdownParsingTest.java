@@ -22,9 +22,10 @@ package net.nicoulaj.idea.markdown;
 
 import com.intellij.openapi.util.io.FileUtil;
 import com.intellij.testFramework.UsefulTestCase;
-import net.nicoulaj.idea.markdown.lang.MarkdownTreeBuilder;
 import net.nicoulaj.idea.markdown.lang.ast.ASTNode;
 import net.nicoulaj.idea.markdown.lang.ast.LeafASTNode;
+import net.nicoulaj.idea.markdown.lang.parser.MarkdownParser;
+import net.nicoulaj.idea.markdown.lang.parser.dialects.commonmark.CommonMarkMarkerProcessor;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -41,12 +42,10 @@ public class MarkdownParsingTest extends UsefulTestCase {
             throw new AssertionError("failed to read src");
         }
 
-        ASTNode tree = new MarkdownTreeBuilder().buildMarkdownTreeFromString(src);
+        ASTNode tree = new MarkdownParser(new CommonMarkMarkerProcessor()).buildMarkdownTreeFromString(src);
         String result = treeToStr(src, tree);
 
         assertSameLinesWithFile(getTestDataPath() + "/" + getTestName(false) + ".txt", result);
-
-        new MarkdownTreeBuilder();
     }
 
     private String treeToStr(String src, @NotNull ASTNode tree) {

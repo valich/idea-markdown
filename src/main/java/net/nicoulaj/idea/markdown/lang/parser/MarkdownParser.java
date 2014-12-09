@@ -22,15 +22,12 @@ package net.nicoulaj.idea.markdown.lang.parser;
 
 import com.intellij.openapi.util.TextRange;
 import net.nicoulaj.idea.markdown.lang.IElementType;
+import net.nicoulaj.idea.markdown.lang.MarkdownElementTypes;
 import net.nicoulaj.idea.markdown.lang.ast.ASTNode;
+import net.nicoulaj.idea.markdown.lang.lexer.MarkdownLexer;
+import net.nicoulaj.idea.markdown.lang.parser.sequentialparsers.SequentialParser;
 import org.jetbrains.annotations.NotNull;
 
-/**
- * Parser implementation for Markdown.
- *
- * @author Julien Nicoulaud <julien.nicoulaud@gmail.com>
- * @since 0.1
- */
 public class MarkdownParser {
     @NotNull
     private final MarkerProcessor markerProcessor;
@@ -38,6 +35,11 @@ public class MarkdownParser {
 
     public MarkdownParser(@NotNull MarkerProcessor markerProcessor) {
         this.markerProcessor = markerProcessor;
+    }
+
+    public ASTNode buildMarkdownTreeFromString(@NotNull final String text) {
+        final TokensCache cache = new TokensCache(new MarkdownLexer(text));
+        return parse(MarkdownElementTypes.MARKDOWN_FILE, cache);
     }
 
     @NotNull

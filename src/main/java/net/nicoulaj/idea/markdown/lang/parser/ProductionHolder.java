@@ -2,6 +2,7 @@ package net.nicoulaj.idea.markdown.lang.parser;
 
 import com.intellij.openapi.util.TextRange;
 import net.nicoulaj.idea.markdown.lang.IElementType;
+import net.nicoulaj.idea.markdown.lang.parser.sequentialparsers.SequentialParser;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
