@@ -1,9 +1,8 @@
 package net.nicoulaj.idea.markdown.lang.lexer;
 
-import com.intellij.lexer.FlexLexer;
-import com.intellij.psi.tree.IElementType;
 import com.intellij.openapi.util.text.StringUtil;
 import net.nicoulaj.idea.markdown.lang.MarkdownTokenTypes;
+import net.nicoulaj.idea.markdown.lang.IElementType;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -13,7 +12,6 @@ import java.util.Stack;
 %%
 
 %class _MarkdownLexer
-%implements FlexLexer
 %unicode
 %public
 %column

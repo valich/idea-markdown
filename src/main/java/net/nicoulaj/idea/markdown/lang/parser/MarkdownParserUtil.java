@@ -20,10 +20,8 @@
  */
 package net.nicoulaj.idea.markdown.lang.parser;
 
-import com.intellij.lang.PsiBuilder;
 import com.intellij.openapi.diagnostic.Logger;
-import com.intellij.psi.TokenType;
-import com.intellij.psi.tree.IElementType;
+import net.nicoulaj.idea.markdown.lang.IElementType;
 import net.nicoulaj.idea.markdown.lang.MarkdownTokenTypes;
 import org.jetbrains.annotations.NotNull;
 
@@ -33,51 +31,52 @@ public class MarkdownParserUtil {
     private MarkdownParserUtil() {
     }
 
-    public static int calcNumberOfConsequentEols(@NotNull PsiBuilder builder) {
+    public static int calcNumberOfConsequentEols(@NotNull TokensCache.Iterator iterator) {
         for (int answer = 0;; answer++) {
-            final IElementType type = builder.lookAhead(answer);
+            final IElementType type = iterator.getType();
             if (type != MarkdownTokenTypes.EOL) {
                 return answer;
             }
+            iterator = iterator.advance();
         }
     }
 
-    public static int getFirstNextLineNonBlockquoteRawIndex(@NotNull PsiBuilder builder) {
-        LOG.assertTrue(builder.getTokenType() == MarkdownTokenTypes.EOL);
+    public static int getFirstNextLineNonBlockquoteRawIndex(@NotNull TokensCache.Iterator iterator) {
+        LOG.assertTrue(iterator.getType() == MarkdownTokenTypes.EOL);
         
         for (int answer = 1;; answer++) {
-            final IElementType type = builder.rawLookup(answer);
-            if (type != TokenType.WHITE_SPACE && type != MarkdownTokenTypes.BLOCK_QUOTE) {
+            final IElementType type = iterator.rawLookup(answer);
+            if (type != MarkdownTokenTypes.WHITE_SPACE && type != MarkdownTokenTypes.BLOCK_QUOTE) {
                 return answer;
             }
         }
     }
 
-    public static int getFirstNonWhiteSpaceRawIndex(@NotNull PsiBuilder builder) {
+    public static int getFirstNonWhiteSpaceRawIndex(@NotNull TokensCache.Iterator iterator) {
         for (int answer = 0;; answer++) {
-            final IElementType type = builder.rawLookup(answer);
-            if (type != TokenType.WHITE_SPACE && type != MarkdownTokenTypes.EOL) {
+            final IElementType type = iterator.rawLookup(answer);
+            if (type != MarkdownTokenTypes.WHITE_SPACE && type != MarkdownTokenTypes.EOL) {
                 return answer;
             }
         }
     }
 
-    public static int getFirstNonWhitespaceLineEolRawIndex(@NotNull PsiBuilder builder) {
-        LOG.assertTrue(builder.getTokenType() == MarkdownTokenTypes.EOL);
+    public static int getFirstNonWhitespaceLineEolRawIndex(@NotNull TokensCache.Iterator iterator) {
+        LOG.assertTrue(iterator.getType() == MarkdownTokenTypes.EOL);
 
-        final int lastIndex = getFirstNonWhiteSpaceRawIndex(builder);
+        final int lastIndex = getFirstNonWhiteSpaceRawIndex(iterator);
         for (int index = lastIndex - 1; index >= 0; --index) {
-            if (builder.rawLookup(index) == MarkdownTokenTypes.EOL) {
+            if (iterator.rawLookup(index) == MarkdownTokenTypes.EOL) {
                 return index;
             }
         }
         throw new AssertionError("Could not be here: 0 is EOL");
     }
 
-    public static int getIndentBeforeRawToken(@NotNull PsiBuilder builder, int rawOffset) {
+    public static int getIndentBeforeRawToken(@NotNull TokensCache.Iterator iterator, int rawOffset) {
         int eolPos = rawOffset - 1;
         while (true) {
-            final IElementType type = builder.rawLookup(eolPos);
+            final IElementType type = iterator.rawLookup(eolPos);
             if (type == MarkdownTokenTypes.EOL || type == null) {
                 break;
             }
@@ -85,7 +84,7 @@ public class MarkdownParserUtil {
             eolPos--;
         }
 
-        return builder.rawTokenTypeStart(rawOffset) - builder.rawTokenTypeStart(eolPos + 1);
+        return iterator.rawStart(rawOffset) - iterator.rawStart(eolPos + 1);
     }
 
 }

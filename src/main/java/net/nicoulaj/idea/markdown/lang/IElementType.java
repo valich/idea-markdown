@@ -20,14 +20,29 @@
  */
 package net.nicoulaj.idea.markdown.lang;
 
-import com.sun.istack.internal.NotNull;
+import org.jetbrains.annotations.NotNull;
 
-public class MarkdownElementType extends IElementType {
-    public MarkdownElementType(@NotNull String name) {
-        super(name);
+public class IElementType {
+
+    private static int numOfRegisteredTypes = 0;
+
+    private final int id;
+    private final String name;
+
+    public IElementType(@NotNull final String name) {
+        this.id = numOfRegisteredTypes++;
+        this.name = name;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
     }
 
     @Override public String toString() {
-        return "Markdown:" + super.toString();
+        return name;
     }
 }

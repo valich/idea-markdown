@@ -20,16 +20,13 @@
  */
 package net.nicoulaj.idea.markdown.lang;
 
-import com.intellij.psi.TokenType;
-import com.intellij.psi.tree.IElementType;
-
 /**
  * Lexer tokens for the Markdown language.
  *
  * @author Julien Nicoulaud <julien.nicoulaud@gmail.com>
  * @since 0.1
  */
-public interface MarkdownTokenTypes extends TokenType {
+public interface MarkdownTokenTypes {
 
     /** Plain text token type. */
     IElementType TEXT = new MarkdownElementType("TEXT");
@@ -106,8 +103,6 @@ public interface MarkdownTokenTypes extends TokenType {
     IElementType EMAIL_AUTOLINK = new MarkdownElementType("EMAIL_AUTOLINK");
     IElementType HTML_TAG = new MarkdownElementType("HTML_TAG");
 
-
-
-
-    IElementType BAD_CHARACTER = new MarkdownElementType("BAD_CHARACTER");
+    IElementType BAD_CHARACTER = new IElementType("BAD_CHARACTER");
+    IElementType WHITE_SPACE = new IElementType("WHITE_SPACE");
 }

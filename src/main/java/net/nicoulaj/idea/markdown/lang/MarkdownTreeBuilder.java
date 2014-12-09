@@ -21,13 +21,15 @@
 package net.nicoulaj.idea.markdown.lang;
 
 import com.sun.istack.internal.NotNull;
+import net.nicoulaj.idea.markdown.lang.ast.ASTNode;
+import net.nicoulaj.idea.markdown.lang.dialects.commonmark.CommonMarkMarkerProcessor;
+import net.nicoulaj.idea.markdown.lang.lexer.MarkdownLexer;
+import net.nicoulaj.idea.markdown.lang.parser.MarkdownParser;
+import net.nicoulaj.idea.markdown.lang.parser.TokensCache;
 
-public class MarkdownElementType extends IElementType {
-    public MarkdownElementType(@NotNull String name) {
-        super(name);
-    }
-
-    @Override public String toString() {
-        return "Markdown:" + super.toString();
+public class MarkdownTreeBuilder {
+    public ASTNode buildMarkdownTreeFromString(@NotNull final String text) {
+        TokensCache cache = new TokensCache(new MarkdownLexer(text));
+        return new MarkdownParser(new CommonMarkMarkerProcessor()).parse(MarkdownElementTypes.MARKDOWN_FILE, cache);
     }
 }

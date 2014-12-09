@@ -20,27 +20,104 @@
  */
 package net.nicoulaj.idea.markdown.lang.lexer;
 
-import com.intellij.lexer.FlexAdapter;
-import com.intellij.lexer.MergingLexerAdapter;
-import com.intellij.psi.tree.TokenSet;
+import com.intellij.util.containers.ContainerUtil;
+import net.nicoulaj.idea.markdown.lang.IElementType;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.io.IOException;
+import java.io.Reader;
+import java.util.Set;
 
 import static net.nicoulaj.idea.markdown.lang.MarkdownTokenTypes.*;
 
-import java.io.Reader;
+public class MarkdownLexer {
+    private static final Set<IElementType> TOKENS_TO_MERGE = ContainerUtil.set(TEXT,
+                                                                               WHITE_SPACE,
+                                                                               CODE,
+                                                                               HTML_BLOCK,
+                                                                               LINK_ID,
+                                                                               LINK_TITLE,
+                                                                               URL,
+                                                                               AUTOLINK,
+                                                                               EMAIL_AUTOLINK,
+                                                                               BAD_CHARACTER);
 
-public class MarkdownLexer extends MergingLexerAdapter {
-    private static final TokenSet TOKENS_TO_MERGE = TokenSet.create(TEXT,
-                                                                    WHITE_SPACE,
-                                                                    CODE,
-                                                                    HTML_BLOCK,
-                                                                    LINK_ID,
-                                                                    LINK_TITLE,
-                                                                    URL,
-                                                                    AUTOLINK,
-                                                                    EMAIL_AUTOLINK,
-                                                                    BAD_CHARACTER);
+    @NotNull
+    private final _MarkdownLexer baseLexer;
 
-    public MarkdownLexer() {
-        super(new FlexAdapter(new _MarkdownLexer((Reader)null)), TOKENS_TO_MERGE);
+    @NotNull
+    private final String originalText;
+
+    @Nullable
+    private IElementType currentType;
+    @Nullable
+    private IElementType nextType;
+
+    private int tokenStart;
+    private int tokenEnd;
+
+    public MarkdownLexer(@NotNull final String text) {
+        originalText = text;
+        baseLexer = new _MarkdownLexer((Reader) null);
+        baseLexer.reset(text, 0, text.length(), 0);
+
+        init();
+    }
+
+    @NotNull
+    public String getOriginalText() {
+        return originalText;
+    }
+
+    public int getTokenStart() {
+        return tokenStart;
+    }
+
+    public int getTokenEnd() {
+        return tokenEnd;
+    }
+
+    @Nullable
+    public IElementType getType() {
+        return currentType;
+    }
+
+    public boolean advance() {
+        return locateToken();
+    }
+
+    private void init() {
+        currentType = advanceBase();
+        tokenStart = baseLexer.getTokenStart();
+
+        calcNextType();
+    }
+
+    private boolean locateToken() {
+        currentType = nextType;
+        tokenStart = tokenEnd;
+        if (currentType == null) {
+            return false;
+        }
+
+        calcNextType();
+        return true;
+    }
+
+    private void calcNextType() {
+        do {
+            tokenEnd = baseLexer.getTokenEnd();
+            nextType = advanceBase();
+        } while (nextType == currentType && TOKENS_TO_MERGE.contains(currentType));
+    }
+
+    private IElementType advanceBase() {
+        try {
+            return baseLexer.advance();
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new AssertionError("This could not be!");
+        }
     }
 }

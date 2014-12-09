@@ -20,16 +20,17 @@
  */
 package net.nicoulaj.idea.markdown.lang.parser.markerblocks;
 
-import com.intellij.lang.PsiBuilder;
-import com.intellij.psi.tree.IElementType;
+import net.nicoulaj.idea.markdown.lang.IElementType;
 import net.nicoulaj.idea.markdown.lang.MarkdownElementTypes;
 import net.nicoulaj.idea.markdown.lang.MarkdownTokenTypes;
 import net.nicoulaj.idea.markdown.lang.parser.MarkdownConstraints;
 import net.nicoulaj.idea.markdown.lang.parser.MarkerBlockImpl;
+import net.nicoulaj.idea.markdown.lang.parser.ProductionHolder;
+import net.nicoulaj.idea.markdown.lang.parser.TokensCache;
 import org.jetbrains.annotations.NotNull;
 
 public class CodeFenceMarkerBlock extends MarkerBlockImpl {
-    public CodeFenceMarkerBlock(@NotNull MarkdownConstraints myConstraints, @NotNull PsiBuilder.Marker marker) {
+    public CodeFenceMarkerBlock(@NotNull MarkdownConstraints myConstraints, @NotNull ProductionHolder.Marker marker) {
         super(myConstraints, marker);
     }
 
@@ -38,7 +39,7 @@ public class CodeFenceMarkerBlock extends MarkerBlockImpl {
     }
 
     @NotNull @Override protected ProcessingResult doProcessToken(@NotNull IElementType tokenType,
-                                                                 @NotNull PsiBuilder builder,
+                                                                 @NotNull TokensCache.Iterator builder,
                                                                  @NotNull
                                                                  MarkdownConstraints currentConstraints) {
         if (tokenType == MarkdownTokenTypes.CODE_FENCE_END) {

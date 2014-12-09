@@ -21,8 +21,8 @@
 package net.nicoulaj.idea.markdown.lang.parser.sequentialparsers;
 
 import com.intellij.openapi.util.TextRange;
-import com.intellij.psi.tree.IElementType;
 import com.intellij.util.containers.ContainerUtil;
+import net.nicoulaj.idea.markdown.lang.IElementType;
 import net.nicoulaj.idea.markdown.lang.MarkdownElementTypes;
 import net.nicoulaj.idea.markdown.lang.MarkdownTokenTypes;
 import net.nicoulaj.idea.markdown.lang.parser.ParserUtil;

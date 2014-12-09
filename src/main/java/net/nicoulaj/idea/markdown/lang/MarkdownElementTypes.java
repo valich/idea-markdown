@@ -20,9 +20,9 @@
  */
 package net.nicoulaj.idea.markdown.lang;
 
-import com.intellij.psi.tree.IElementType;
-
 public interface MarkdownElementTypes {
+    IElementType MARKDOWN_FILE = new MarkdownElementType("MARKDOWN_FILE");
+
     IElementType UNORDERED_LIST = new MarkdownElementType("UNORDERED_LIST");
 
     IElementType ORDERED_LIST = new MarkdownElementType("ORDERED_LIST");

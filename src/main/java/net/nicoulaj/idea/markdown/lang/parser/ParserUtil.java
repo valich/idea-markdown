@@ -20,13 +20,10 @@
  */
 package net.nicoulaj.idea.markdown.lang.parser;
 
-import com.intellij.lang.PsiBuilder;
 import com.intellij.openapi.util.TextRange;
 import com.intellij.openapi.util.text.StringUtil;
-import com.intellij.psi.TokenType;
-import com.intellij.psi.tree.IElementType;
 import com.intellij.util.containers.ContainerUtil;
-import com.intellij.util.containers.Stack;
+import net.nicoulaj.idea.markdown.lang.IElementType;
 import net.nicoulaj.idea.markdown.lang.MarkdownTokenTypes;
 import org.jetbrains.annotations.NotNull;
 
@@ -66,7 +63,7 @@ public class ParserUtil {
         if (type == null) {
             return false;
         }
-        if (type == MarkdownTokenTypes.EOL || type == TokenType.WHITE_SPACE) {
+        if (type == MarkdownTokenTypes.EOL || type == MarkdownTokenTypes.WHITE_SPACE) {
             return true;
         }
         if (lookup == -1) {
@@ -77,38 +74,6 @@ public class ParserUtil {
         }
     }
 
-
-    public static void flushMarkers(PsiBuilder builder, Collection<SequentialParser.Node> results, int startPosition, int endPosition) {
-        // builder at the startPosition
-        List<MyEvent> events = ContainerUtil.newArrayList();
-        Stack<PsiBuilder.Marker> markersStack = ContainerUtil.newStack();
-
-        for (SequentialParser.Node result : results) {
-            events.add(new MyEvent(result.range.getStartOffset(), result));
-            events.add(new MyEvent(result.range.getEndOffset(), result));
-        }
-        ContainerUtil.sort(events);
-
-        int currentPosition = startPosition;
-        for (MyEvent event : events) {
-            while (event.position > currentPosition) {
-                builder.advanceLexer();
-                currentPosition++;
-            }
-
-            if (event.isStart()) {
-                markersStack.push(builder.mark());
-            }
-            else {
-                markersStack.pop().done(event.info.type);
-            }
-        }
-
-        while (currentPosition < endPosition) {
-            builder.advanceLexer();
-            currentPosition++;
-        }
-    }
 
     @NotNull
     public static Collection<TextRange> filterBlockquotes(@NotNull TokensCache tokensCache, @NotNull TextRange textRange) {
@@ -130,28 +95,4 @@ public class ParserUtil {
         return result;
     }
 
-    private static class MyEvent implements Comparable<MyEvent> {
-        final int position;
-        final SequentialParser.Node info;
-
-        public MyEvent(int position, SequentialParser.Node info) {
-            this.position = position;
-            this.info = info;
-        }
-
-        private boolean isStart() {
-            return info.range.getStartOffset() == position;
-        }
-
-        @Override public int compareTo(@NotNull MyEvent o) {
-            if (position != o.position) {
-                return position - o.position;
-            }
-            if (isStart() == o.isStart()) {
-                return -(info.range.getStartOffset() + info.range.getEndOffset()
-                         -o.info.range.getStartOffset() - o.info.range.getEndOffset());
-            }
-            return isStart() ? 1 : -1;
-        }
-    }
 }

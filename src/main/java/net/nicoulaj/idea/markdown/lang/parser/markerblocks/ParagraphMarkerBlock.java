@@ -20,11 +20,9 @@
  */
 package net.nicoulaj.idea.markdown.lang.parser.markerblocks;
 
-import com.intellij.lang.PsiBuilder;
 import com.intellij.openapi.util.TextRange;
-import com.intellij.psi.tree.IElementType;
+import net.nicoulaj.idea.markdown.lang.IElementType;
 import net.nicoulaj.idea.markdown.lang.MarkdownElementTypes;
-import net.nicoulaj.idea.markdown.lang.MarkdownTokenTypeSets;
 import net.nicoulaj.idea.markdown.lang.MarkdownTokenTypes;
 import net.nicoulaj.idea.markdown.lang.parser.*;
 import org.jetbrains.annotations.NotNull;
@@ -32,36 +30,33 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Collection;
 
 public class ParagraphMarkerBlock extends MarkerBlockImpl {
-    @NotNull
-    private final PsiBuilder builder;
+    @NotNull private final ProductionHolder productionHolder;
 
     @NotNull
     private final TokensCache tokensCache;
-    private final PsiBuilder.Marker rollbackMarker;
     private final int startPosition;
 
     public ParagraphMarkerBlock(@NotNull MarkdownConstraints myConstraints,
-                                @NotNull PsiBuilder builder,
+                                @NotNull ProductionHolder productionHolder,
                                 @NotNull TokensCache tokensCache) {
-        super(myConstraints, builder.mark(), MarkdownTokenTypes.EOL);
-        this.builder = builder;
+        super(myConstraints, productionHolder.new Marker(), MarkdownTokenTypes.EOL);
+        this.productionHolder = productionHolder;
         this.tokensCache = tokensCache;
-        rollbackMarker = builder.mark();
-        startPosition = tokensCache.calcCurrentBuilderPosition(builder);
+        startPosition = productionHolder.getCurrentPosition();
     }
 
     @NotNull @Override protected ClosingAction getDefaultAction() {
         return ClosingAction.DONE;
     }
 
-    @NotNull @Override protected ProcessingResult doProcessToken(@NotNull IElementType tokenType, @NotNull PsiBuilder builder, @NotNull MarkdownConstraints currentConstraints) {
+    @NotNull @Override protected ProcessingResult doProcessToken(@NotNull IElementType tokenType, @NotNull TokensCache.Iterator builder, @NotNull MarkdownConstraints currentConstraints) {
         LOG.assertTrue(tokenType == MarkdownTokenTypes.EOL);
 
         if (MarkdownParserUtil.calcNumberOfConsequentEols(builder) >= 2) {
             return ProcessingResult.DEFAULT;
         }
 
-        IElementType afterEol = builder.lookAhead(1);
+        IElementType afterEol = builder.advance().getType();
         if (afterEol == MarkdownTokenTypes.BLOCK_QUOTE) {
             if (!MarkdownConstraints.fromBase(builder, 1, myConstraints).upstreamWith(myConstraints)) {
                 return ProcessingResult.DEFAULT;
@@ -70,7 +65,7 @@ public class ParagraphMarkerBlock extends MarkerBlockImpl {
             afterEol = builder.rawLookup(MarkdownParserUtil.getFirstNextLineNonBlockquoteRawIndex(builder));
         }
 
-        if (MarkdownTokenTypeSets.SETEXT.contains(afterEol)) {
+        if (afterEol == MarkdownTokenTypes.SETEXT_1 || afterEol == MarkdownTokenTypes.SETEXT_2) {
             return new ProcessingResult(ClosingAction.NOTHING, ClosingAction.DROP, EventAction.PROPAGATE);
         }
 
@@ -92,20 +87,13 @@ public class ParagraphMarkerBlock extends MarkerBlockImpl {
     @Override public boolean acceptAction(@NotNull ClosingAction action) {
         if (action != ClosingAction.NOTHING) {
             if (action == ClosingAction.DONE || action == ClosingAction.DEFAULT) {
-                int endPosition = tokensCache.calcCurrentBuilderPosition(builder);
+                int endPosition = productionHolder.getCurrentPosition();
 
-                rollbackMarker.rollbackTo();
                 final Collection<SequentialParser.Node> results = new SequentialParserManager().runParsingSequence(
                         tokensCache,
                         ParserUtil.filterBlockquotes(tokensCache, TextRange.create(startPosition, endPosition)));
 
-                ParserUtil.flushMarkers(builder, results, startPosition, endPosition);
-
-                LOG.assertTrue(tokensCache.calcCurrentBuilderPosition(builder) == endPosition,
-                               "We have shifted builder! Bad inline ranges probably");
-
-            } else {
-                rollbackMarker.drop();
+                productionHolder.addProduction(results);
             }
         }
 

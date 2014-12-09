@@ -20,40 +20,41 @@
  */
 package net.nicoulaj.idea.markdown.lang.parser;
 
-import com.intellij.lang.PsiBuilder;
 import com.intellij.openapi.diagnostic.Logger;
-import com.intellij.psi.tree.IElementType;
-import com.intellij.psi.tree.TokenSet;
+import net.nicoulaj.idea.markdown.lang.IElementType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Collections;
+import java.util.Set;
 
 public abstract class MarkerBlockImpl implements MarkerBlock {
     protected static final Logger LOG = Logger.getInstance(MarkerBlockImpl.class);
 
     @NotNull
-    private final PsiBuilder.Marker marker;
+    private final ProductionHolder.Marker marker;
 
     @Nullable
-    private final TokenSet interestingTypes;
+    private final Set<IElementType> interestingTypes;
 
     @NotNull
     protected final MarkdownConstraints myConstraints;
 
-    public MarkerBlockImpl(@NotNull MarkdownConstraints myConstraints, @NotNull PsiBuilder.Marker marker, @Nullable TokenSet interestingTypes) {
+    public MarkerBlockImpl(@NotNull MarkdownConstraints myConstraints, @NotNull ProductionHolder.Marker marker, @Nullable Set<IElementType> interestingTypes) {
         this.myConstraints = myConstraints;
         this.marker = marker;
         this.interestingTypes = interestingTypes;
     }
 
-    public MarkerBlockImpl(@NotNull MarkdownConstraints myConstraints, @NotNull PsiBuilder.Marker marker, @NotNull IElementType interestingType) {
-        this(myConstraints, marker, TokenSet.create(interestingType));
+    public MarkerBlockImpl(@NotNull MarkdownConstraints myConstraints, @NotNull ProductionHolder.Marker marker, @NotNull IElementType interestingType) {
+        this(myConstraints, marker, Collections.singleton(interestingType));
     }
 
-    public MarkerBlockImpl(@NotNull MarkdownConstraints myConstraints, @NotNull PsiBuilder.Marker marker) {
-        this(myConstraints, marker, (TokenSet)null);
+    public MarkerBlockImpl(@NotNull MarkdownConstraints myConstraints, @NotNull ProductionHolder.Marker marker) {
+        this(myConstraints, marker, (Set<IElementType>)null);
     }
 
-    @NotNull public PsiBuilder.Marker getMarker() {
+    @NotNull public ProductionHolder.Marker getMarker() {
         return marker;
     }
 
@@ -61,7 +62,7 @@ public abstract class MarkerBlockImpl implements MarkerBlock {
         return myConstraints;
     }
 
-    @NotNull @Override public ProcessingResult processToken(@NotNull IElementType tokenType, @NotNull PsiBuilder builder, @NotNull MarkdownConstraints currentConstraints) {
+    @NotNull @Override public ProcessingResult processToken(@NotNull IElementType tokenType, @NotNull TokensCache.Iterator builder, @NotNull MarkdownConstraints currentConstraints) {
         if (interestingTypes != null && !interestingTypes.contains(tokenType)) {
             return ProcessingResult.PASS;
         }
@@ -83,7 +84,7 @@ public abstract class MarkerBlockImpl implements MarkerBlock {
     protected abstract ClosingAction getDefaultAction();
 
     @NotNull
-    protected abstract ProcessingResult doProcessToken(@NotNull IElementType tokenType, @NotNull PsiBuilder builder, @NotNull MarkdownConstraints currentConstraints);
+    protected abstract ProcessingResult doProcessToken(@NotNull IElementType tokenType, @NotNull TokensCache.Iterator iterator, @NotNull MarkdownConstraints currentConstraints);
 
     @NotNull
     public abstract IElementType getDefaultNodeType();

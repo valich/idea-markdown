@@ -18,16 +18,19 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package net.nicoulaj.idea.markdown.lang;
+package net.nicoulaj.idea.markdown.lang.ast;
 
-import com.sun.istack.internal.NotNull;
+import net.nicoulaj.idea.markdown.lang.IElementType;
+import org.jetbrains.annotations.NotNull;
 
-public class MarkdownElementType extends IElementType {
-    public MarkdownElementType(@NotNull String name) {
-        super(name);
-    }
+public interface ASTNode {
+    @NotNull
+    IElementType getType();
 
-    @Override public String toString() {
-        return "Markdown:" + super.toString();
-    }
+    int getStartOffset();
+
+    int getEndOffset();
+
+    @NotNull
+    ASTNode[] getChildren();
 }

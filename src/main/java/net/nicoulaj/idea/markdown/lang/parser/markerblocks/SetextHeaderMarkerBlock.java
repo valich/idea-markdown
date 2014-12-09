@@ -20,28 +20,38 @@
  */
 package net.nicoulaj.idea.markdown.lang.parser.markerblocks;
 
-import com.intellij.lang.PsiBuilder;
-import com.intellij.psi.tree.IElementType;
+import net.nicoulaj.idea.markdown.lang.IElementType;
 import net.nicoulaj.idea.markdown.lang.MarkdownElementTypes;
-import net.nicoulaj.idea.markdown.lang.MarkdownTokenTypeSets;
 import net.nicoulaj.idea.markdown.lang.MarkdownTokenTypes;
 import net.nicoulaj.idea.markdown.lang.parser.MarkdownConstraints;
 import net.nicoulaj.idea.markdown.lang.parser.MarkerBlockImpl;
+import net.nicoulaj.idea.markdown.lang.parser.ProductionHolder;
+import net.nicoulaj.idea.markdown.lang.parser.TokensCache;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.HashSet;
+import java.util.Set;
 
 public class SetextHeaderMarkerBlock extends MarkerBlockImpl {
     @NotNull
     private IElementType myNodeType = MarkdownElementTypes.SETEXT_1;
 
-    public SetextHeaderMarkerBlock(@NotNull MarkdownConstraints myConstraints, @NotNull PsiBuilder.Marker marker) {
-        super(myConstraints, marker, MarkdownTokenTypeSets.SETEXT);
+    public SetextHeaderMarkerBlock(@NotNull MarkdownConstraints myConstraints, @NotNull ProductionHolder.Marker marker) {
+        super(myConstraints, marker, setextSet());
+    }
+
+    private static Set<IElementType> setextSet() {
+        Set<IElementType> set = new HashSet<IElementType>();
+        set.add(MarkdownTokenTypes.SETEXT_1);
+        set.add(MarkdownTokenTypes.SETEXT_2);
+        return set;
     }
 
     @NotNull @Override protected ClosingAction getDefaultAction() {
         return ClosingAction.DROP;
     }
 
-    @NotNull @Override protected ProcessingResult doProcessToken(@NotNull IElementType tokenType, @NotNull PsiBuilder builder, @NotNull MarkdownConstraints currentConstraints) {
+    @NotNull @Override protected ProcessingResult doProcessToken(@NotNull IElementType tokenType, @NotNull TokensCache.Iterator iterator, @NotNull MarkdownConstraints currentConstraints) {
         if (tokenType == MarkdownTokenTypes.SETEXT_1) {
             myNodeType = MarkdownElementTypes.SETEXT_1;
         }

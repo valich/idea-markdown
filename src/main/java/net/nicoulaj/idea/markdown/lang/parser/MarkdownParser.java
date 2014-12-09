@@ -20,11 +20,9 @@
  */
 package net.nicoulaj.idea.markdown.lang.parser;
 
-import com.intellij.lang.ASTNode;
-import com.intellij.lang.PsiBuilder;
-import com.intellij.lang.PsiParser;
-import com.intellij.openapi.diagnostic.Logger;
-import com.intellij.psi.tree.IElementType;
+import com.intellij.openapi.util.TextRange;
+import net.nicoulaj.idea.markdown.lang.IElementType;
+import net.nicoulaj.idea.markdown.lang.ast.ASTNode;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -33,45 +31,36 @@ import org.jetbrains.annotations.NotNull;
  * @author Julien Nicoulaud <julien.nicoulaud@gmail.com>
  * @since 0.1
  */
-public class MarkdownParser implements PsiParser {
-
-    private final static Logger LOG = Logger.getInstance(MarkdownParser.class);
-
-
+public class MarkdownParser {
     @NotNull
-    private MarkerProcessor markerProcessor;
+    private final MarkerProcessor markerProcessor;
 
 
     public MarkdownParser(@NotNull MarkerProcessor markerProcessor) {
         this.markerProcessor = markerProcessor;
     }
 
-    /**
-     * Parse the contents of the specified PSI builder and returns an AST tree with the
-     * specified type of root element.
-     *
-     * @param root    the type of the root element in the AST tree.
-     * @param builder the builder which is used to retrieve the original file tokens and build the AST tree.
-     * @return the root of the resulting AST tree.
-     */
     @NotNull
-    public ASTNode parse(IElementType root, PsiBuilder builder) {
-        TokensCache tokensCache = new TokensCache(builder);
+    public ASTNode parse(IElementType root, TokensCache tokensCache) {
         markerProcessor.setTokensCache(tokensCache);
 
-        PsiBuilder.Marker rootMarker = builder.mark();
+        final int startOffset = 0;
 
-        while (!builder.eof()) {
-            final IElementType tokenType = builder.getTokenType();
-            assert tokenType != null : "We have checked it's not eof!";
-            markerProcessor.processToken(tokenType, builder);
-            builder.advanceLexer();
+        TokensCache.Iterator iterator = tokensCache.new Iterator(startOffset);
+        while (iterator.getType() != null) {
+            final IElementType tokenType = iterator.getType();
+            iterator = markerProcessor.processToken(tokenType, iterator);
+            iterator = iterator.advance();
         }
-        markerProcessor.flushMarkers();
+        markerProcessor.flushMarkers(iterator);
 
-        rootMarker.done(root);
 
-        return builder.getTreeBuilt();
+        final MyBuilder builder = new MyBuilder();
+
+        builder.addNode(new SequentialParser.Node(TextRange.create(0, iterator.getIndex()), root));
+        builder.addNodes(markerProcessor.getProduction());
+
+        return builder.buildTree(tokensCache);
     }
 
 }

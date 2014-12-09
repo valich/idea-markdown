@@ -20,17 +20,14 @@
  */
 package net.nicoulaj.idea.markdown.lang.parser.markerblocks;
 
-import com.intellij.lang.PsiBuilder;
-import com.intellij.psi.tree.IElementType;
+import net.nicoulaj.idea.markdown.lang.IElementType;
 import net.nicoulaj.idea.markdown.lang.MarkdownElementTypes;
 import net.nicoulaj.idea.markdown.lang.MarkdownTokenTypes;
-import net.nicoulaj.idea.markdown.lang.parser.MarkdownConstraints;
-import net.nicoulaj.idea.markdown.lang.parser.MarkdownParserUtil;
-import net.nicoulaj.idea.markdown.lang.parser.MarkerBlockImpl;
+import net.nicoulaj.idea.markdown.lang.parser.*;
 import org.jetbrains.annotations.NotNull;
 
 public class CodeBlockMarkerBlock extends MarkerBlockImpl {
-    public CodeBlockMarkerBlock(@NotNull MarkdownConstraints myConstraints, @NotNull PsiBuilder.Marker marker) {
+    public CodeBlockMarkerBlock(@NotNull MarkdownConstraints myConstraints, @NotNull ProductionHolder.Marker marker) {
         super(myConstraints, marker);
     }
 
@@ -38,7 +35,7 @@ public class CodeBlockMarkerBlock extends MarkerBlockImpl {
         return ClosingAction.DONE;
     }
 
-    @NotNull @Override protected ProcessingResult doProcessToken(@NotNull IElementType tokenType, @NotNull PsiBuilder builder, @NotNull MarkdownConstraints currentConstraints) {
+    @NotNull @Override protected ProcessingResult doProcessToken(@NotNull IElementType tokenType, @NotNull TokensCache.Iterator iterator, @NotNull MarkdownConstraints currentConstraints) {
         // Eat everything if we're on code line
         if (tokenType != MarkdownTokenTypes.EOL) {
             return ProcessingResult.CANCEL;
@@ -46,26 +43,26 @@ public class CodeBlockMarkerBlock extends MarkerBlockImpl {
 
         LOG.assertTrue(tokenType == MarkdownTokenTypes.EOL);
 
-        IElementType afterEol = builder.lookAhead(1);
+        IElementType afterEol = iterator.advance().getType();
         int nonWhitespaceOffset;
         if (afterEol == MarkdownTokenTypes.BLOCK_QUOTE) {
-            final MarkdownConstraints nextLineConstraints = MarkdownConstraints.fromBase(builder, 1, myConstraints);
+            final MarkdownConstraints nextLineConstraints = MarkdownConstraints.fromBase(iterator, 1, myConstraints);
             // kinda equals
             if (!(nextLineConstraints.upstreamWith(myConstraints) && nextLineConstraints.extendsPrev(myConstraints))) {
                 return ProcessingResult.DEFAULT;
             }
 
-            afterEol = builder.rawLookup(MarkdownParserUtil.getFirstNextLineNonBlockquoteRawIndex(builder));
-            nonWhitespaceOffset = MarkdownParserUtil.getFirstNextLineNonBlockquoteRawIndex(builder);
+            afterEol = iterator.rawLookup(MarkdownParserUtil.getFirstNextLineNonBlockquoteRawIndex(iterator));
+            nonWhitespaceOffset = MarkdownParserUtil.getFirstNextLineNonBlockquoteRawIndex(iterator);
         } else {
-            nonWhitespaceOffset = MarkdownParserUtil.getFirstNonWhiteSpaceRawIndex(builder);
+            nonWhitespaceOffset = MarkdownParserUtil.getFirstNonWhiteSpaceRawIndex(iterator);
         }
 
         if (afterEol == MarkdownTokenTypes.EOL) {
             return ProcessingResult.CANCEL;
         }
 
-        final int indent = builder.rawTokenTypeStart(nonWhitespaceOffset) - builder.rawTokenTypeStart(1);
+        final int indent = iterator.rawStart(nonWhitespaceOffset) - iterator.rawStart(1);
         if (indent < myConstraints.getIndent() + 4) {
             return ProcessingResult.DEFAULT;
         } else {

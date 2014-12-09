@@ -20,9 +20,10 @@
  */
 package net.nicoulaj.idea.markdown.lang.parser;
 
-import com.intellij.lang.PsiBuilder;
-import com.intellij.psi.tree.IElementType;
 import com.intellij.util.containers.ContainerUtil;
+import net.nicoulaj.idea.markdown.lang.IElementType;
+import net.nicoulaj.idea.markdown.lang.MarkdownTokenTypes;
+import net.nicoulaj.idea.markdown.lang.lexer.MarkdownLexer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,64 +35,39 @@ public class TokensCache {
     @NotNull
     private final List<TokenInfo> filteredTokens;
     @NotNull
-    private final PsiBuilder builder;
+    private final String originalText;
 
-    public TokensCache(@NotNull PsiBuilder builder) {
-        this.builder = builder;
+    public TokensCache(@NotNull MarkdownLexer lexer) {
         cachedTokens = ContainerUtil.newArrayList();
         filteredTokens = ContainerUtil.newArrayList();
+        originalText = lexer.getOriginalText();
 
-        cacheTokens();
+        cacheTokens(lexer);
         verify();
     }
 
-    public int calcCurrentBuilderPosition(@NotNull PsiBuilder builder) {
-        if (builder.eof()) {
-            return filteredTokens.size();
-        }
-
-        int currentOffset = builder.getCurrentOffset();
-        for (TokenInfo filteredToken : filteredTokens) {
-            if (filteredToken.tokenStart == currentOffset) {
-                return filteredToken.normIndex;
-            }
-        }
-        throw new IllegalStateException("could not be here");
+    private static boolean isWhitespace(IElementType elementType) {
+        return elementType == MarkdownTokenTypes.WHITE_SPACE;
     }
 
     public char getRawCharAt(int index) {
         if (index < 0) return 0;
-        CharSequence originalText = builder.getOriginalText();
         if (index >= originalText.length()) return 0;
         return originalText.charAt(index);
     }
 
-    private void cacheTokens() {
-        PsiBuilder.Marker startMarker = builder.mark();
+    private void cacheTokens(MarkdownLexer lexer) {
+        while (lexer.getType() != null) {
+            TokenInfo info = new TokenInfo(lexer.getType(), lexer.getTokenStart(), lexer.getTokenEnd(), cachedTokens.size(), -1);
+            cachedTokens.add(info);
 
-        for (int i = 0; builder.rawLookup(i) != null; ++i) {
-            cachedTokens.add(new TokenInfo(builder.rawLookup(i),
-                                           builder.rawTokenTypeStart(i),
-                                           builder.rawTokenTypeStart(i + 1),
-                                           i,
-                                           -1));
-        }
-
-        int listIndex = 0;
-        int builderIndex = 0;
-        while (builder.getTokenType() != null) {
-            while (builder.getCurrentOffset() > cachedTokens.get(listIndex).tokenStart) {
-                listIndex++;
+            if (!isWhitespace(info.type)) {
+                info.setNormIndex(filteredTokens.size());
+                filteredTokens.add(info);
             }
-            assert  builder.getCurrentOffset() == cachedTokens.get(listIndex).tokenStart;
-            cachedTokens.get(listIndex).setNormIndex(builderIndex);
-            filteredTokens.add(cachedTokens.get(listIndex));
 
-            builder.advanceLexer();
-            builderIndex++;
+            lexer.advance();
         }
-
-        startMarker.rollbackTo();
     }
 
     private void verify() {
@@ -169,7 +145,7 @@ public class TokensCache {
                 return new TokenInfo(null, 0, 0, 0, 0);
             }
             else if (index >= filteredTokens.size()) {
-                return new TokenInfo(null, builder.getOriginalText().length(), 0, 0, 0);
+                return new TokenInfo(null, originalText.length(), 0, 0, 0);
             }
 
             final int rawIndex = filteredTokens.get(index).rawIndex + rawSteps;
@@ -177,7 +153,7 @@ public class TokensCache {
                 return new TokenInfo(null, 0, 0, 0, 0);
             }
             else if (rawIndex >= cachedTokens.size()) {
-                return new TokenInfo(null, builder.getOriginalText().length(), 0, 0, 0);
+                return new TokenInfo(null, originalText.length(), 0, 0, 0);
             }
 
             return cachedTokens.get(rawIndex);
@@ -190,7 +166,7 @@ public class TokensCache {
 
         @NotNull
         public String getText() {
-            return builder.getOriginalText().subSequence(info(0).tokenStart, info(0).tokenEnd).toString();
+            return originalText.subSequence(info(0).tokenStart, info(0).tokenEnd).toString();
         }
 
         public int getStart() {
@@ -201,10 +177,28 @@ public class TokensCache {
             return info(0).tokenEnd;
         }
 
+        @Nullable
         public IElementType rawLookup(int steps) {
             return info(steps).type;
         }
 
+        public int rawStart(int steps) {
+            return info(steps).tokenStart;
+        }
+
+        @Nullable
+        public String rawText(int steps) {
+            TokenInfo info = info(steps);
+            if (info.type == null) {
+                return null;
+            }
+            return originalText.subSequence(info.tokenStart, info.tokenEnd).toString();
+        }
+
+        @Override
+        public String toString() {
+            return "Iterator: " + index + ": " + getType();
+        }
     }
 
     private static class TokenInfo {
@@ -224,6 +218,11 @@ public class TokensCache {
 
         public void setNormIndex(int i) {
             normIndex = i;
+        }
+
+        @Override
+        public String toString() {
+            return "TokenInfo: " + type.toString() + " [" + tokenStart + ", " + tokenEnd + ")";
         }
     }
 }

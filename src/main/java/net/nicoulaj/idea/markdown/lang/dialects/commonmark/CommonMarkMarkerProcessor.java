@@ -20,17 +20,13 @@
  */
 package net.nicoulaj.idea.markdown.lang.dialects.commonmark;
 
-import com.intellij.lang.PsiBuilder;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.util.Pair;
-import com.intellij.psi.TokenType;
-import com.intellij.psi.tree.IElementType;
 import com.intellij.util.containers.ContainerUtil;
+import net.nicoulaj.idea.markdown.lang.IElementType;
 import net.nicoulaj.idea.markdown.lang.MarkdownTokenTypes;
 import net.nicoulaj.idea.markdown.lang.dialects.FixedPriorityListMarkerProcessor;
-import net.nicoulaj.idea.markdown.lang.parser.MarkdownConstraints;
-import net.nicoulaj.idea.markdown.lang.parser.MarkdownParserUtil;
-import net.nicoulaj.idea.markdown.lang.parser.MarkerBlock;
+import net.nicoulaj.idea.markdown.lang.parser.*;
 import net.nicoulaj.idea.markdown.lang.parser.markerblocks.*;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -66,7 +62,8 @@ public class CommonMarkMarkerProcessor extends FixedPriorityListMarkerProcessor 
     }
 
     @NotNull @Override public MarkerBlock[] createNewMarkerBlocks(@NotNull final IElementType tokenType,
-                                                                  @NotNull PsiBuilder builder) {
+                                                                  @NotNull TokensCache.Iterator iterator,
+                                                                  @NotNull ProductionHolder productionHolder) {
         if (tokenType == MarkdownTokenTypes.EOL) {
             return NO_BLOCKS;
         }
@@ -79,50 +76,49 @@ public class CommonMarkMarkerProcessor extends FixedPriorityListMarkerProcessor 
 
         List<MarkerBlock> result = new ArrayList<MarkerBlock>(1);
 
-        final MarkdownConstraints newConstraints = getCurrentConstraints().addModifierIfNeeded(tokenType, builder);
+        final MarkdownConstraints newConstraints = getCurrentConstraints().addModifierIfNeeded(tokenType, iterator);
         final ParagraphMarkerBlock paragraph = getParagraphBlock();
 
-        if (MarkdownParserUtil.getIndentBeforeRawToken(builder, 0) >= newConstraints.getIndent() + 4
+        if (MarkdownParserUtil.getIndentBeforeRawToken(iterator, 0) >= newConstraints.getIndent() + 4
             && paragraph == null) {
-            result.add(new CodeBlockMarkerBlock(newConstraints, builder.mark()));
+            result.add(new CodeBlockMarkerBlock(newConstraints, productionHolder.mark()));
         }
         else if (tokenType == MarkdownTokenTypes.BLOCK_QUOTE) {
-            result.add(new BlockQuoteMarkerBlock(newConstraints, builder.mark()));
+            result.add(new BlockQuoteMarkerBlock(newConstraints, productionHolder.mark()));
         }
         else if (tokenType == MarkdownTokenTypes.LIST_NUMBER
             || tokenType == MarkdownTokenTypes.LIST_BULLET) {
             if (getLastBlock() instanceof ListMarkerBlock) {
-                result.add(new ListItemMarkerBlock(newConstraints, builder.mark()));
+                result.add(new ListItemMarkerBlock(newConstraints, productionHolder.mark()));
             }
             else {
-                result.add(new ListMarkerBlock(newConstraints, builder.mark(), tokenType));
-                result.add(new ListItemMarkerBlock(newConstraints, builder.mark()));
+                result.add(new ListMarkerBlock(newConstraints, productionHolder.mark(), tokenType));
+                result.add(new ListItemMarkerBlock(newConstraints, productionHolder.mark()));
             }
         }
         else if (tokenType == MarkdownTokenTypes.ATX_HEADER && paragraph == null) {
-            final String tokenText = builder.getTokenText();
-            LOG.assertTrue(tokenText != null, "type is not null but text is!");
-            result.add(new AtxHeaderMarkerBlock(newConstraints, builder.mark(), tokenText.length()));
+            final String tokenText = iterator.getText();
+            result.add(new AtxHeaderMarkerBlock(newConstraints, productionHolder.mark(), tokenText.length()));
         }
         else if (tokenType == MarkdownTokenTypes.CODE_FENCE_START) {
-            result.add(new CodeFenceMarkerBlock(newConstraints, builder.mark()));
+            result.add(new CodeFenceMarkerBlock(newConstraints, productionHolder.mark()));
         }
         else {
             LOG.assertTrue(tokenType != MarkdownTokenTypes.EOL);
             ParagraphMarkerBlock paragraphToUse;
 
             if (paragraph == null) {
-                paragraphToUse = new ParagraphMarkerBlock(newConstraints, builder, tokensCache);
+                paragraphToUse = new ParagraphMarkerBlock(newConstraints, productionHolder, tokensCache);
                 result.add(paragraphToUse);
 
-                if (isAtLineStart(builder)) {
-                    result.add(new SetextHeaderMarkerBlock(newConstraints, builder.mark()));
+                if (isAtLineStart(iterator)) {
+                    result.add(new SetextHeaderMarkerBlock(newConstraints, productionHolder.mark()));
 
                 }
-//                addLinkDefinitionIfAny(builder, result, newConstraints, paragraphToUse);
+//                addLinkDefinitionIfAny(iterator, result, newConstraints, paragraphToUse);
             }
 
-//            addInlineMarkerBlocks(result, paragraphToUse, builder, tokenType);
+//            addInlineMarkerBlocks(result, paragraphToUse, iterator, tokenType);
         }
 
         return result.toArray(new MarkerBlock[result.size()]);
@@ -139,13 +135,13 @@ public class CommonMarkMarkerProcessor extends FixedPriorityListMarkerProcessor 
         return ContainerUtil.getLastItem(getMarkersStack());
     }
 
-    private static boolean isAtLineStart(@NotNull PsiBuilder builder) {
+    private static boolean isAtLineStart(@NotNull TokensCache.Iterator iterator) {
         for (int index = -1;; --index) {
-            final IElementType type = builder.rawLookup(index);
+            final IElementType type = iterator.rawLookup(index);
             if (type == null || type == MarkdownTokenTypes.EOL) {
                 return true;
             }
-            if (type != TokenType.WHITE_SPACE) {
+            if (type != MarkdownTokenTypes.WHITE_SPACE) {
                 return false;
             }
         }

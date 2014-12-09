@@ -20,18 +20,57 @@
  */
 package net.nicoulaj.idea.markdown;
 
-import com.intellij.testFramework.ParsingTestCase;
-import net.nicoulaj.idea.markdown.lang.parser.MarkdownParserDefinition;
+import com.intellij.openapi.util.io.FileUtil;
+import com.intellij.testFramework.UsefulTestCase;
+import net.nicoulaj.idea.markdown.lang.MarkdownTreeBuilder;
+import net.nicoulaj.idea.markdown.lang.ast.ASTNode;
+import net.nicoulaj.idea.markdown.lang.ast.LeafASTNode;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
+import java.io.IOException;
 
-public class MarkdownParsingTest extends ParsingTestCase {
-    public MarkdownParsingTest() {
-        super("", "md", new MarkdownParserDefinition());
-    }
+public class MarkdownParsingTest extends UsefulTestCase {
 
     private void defaultTest() {
-        doTest(true);
+        String src;
+        try {
+            src = FileUtil.loadFile(new File(getTestDataPath() + "/" + getTestName(true) + ".md")).trim();
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new AssertionError("failed to read src");
+        }
+
+        ASTNode tree = new MarkdownTreeBuilder().buildMarkdownTreeFromString(src);
+        String result = treeToStr(src, tree);
+
+        assertSameLinesWithFile(getTestDataPath() + "/" + getTestName(false) + ".txt", result);
+
+        new MarkdownTreeBuilder();
+    }
+
+    private String treeToStr(String src, @NotNull ASTNode tree) {
+        return treeToStr(src, tree, new StringBuilder(), 0).toString();
+    }
+
+    private StringBuilder treeToStr(String src, @NotNull ASTNode tree, @NotNull StringBuilder sb, int depth) {
+        if (sb.length() > 0) {
+            sb.append('\n');
+        }
+        for (int i = 0; i < depth * 2; ++i) {
+            sb.append(' ');
+        }
+
+        sb.append(tree.getType().toString());
+        if (tree instanceof LeafASTNode) {
+            final String str = src.substring(tree.getStartOffset(), tree.getEndOffset());
+            sb.append("('").append(str.replaceAll("\\n", "\\\\n")).append("')");
+        }
+        for (ASTNode child : tree.getChildren()) {
+            treeToStr(src, child, sb, depth + 1);
+        }
+
+        return sb;
     }
 
     public void testSimple() {
@@ -86,7 +125,7 @@ public class MarkdownParsingTest extends ParsingTestCase {
         defaultTest();
     }
 
-    @Override protected String getTestDataPath() {
+    protected String getTestDataPath() {
         return new File("src/test/data/parser").getAbsolutePath();
     }
 }

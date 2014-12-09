@@ -20,13 +20,10 @@
  */
 package net.nicoulaj.idea.markdown.lang.parser.markerblocks;
 
-import com.intellij.lang.PsiBuilder;
-import com.intellij.psi.tree.IElementType;
+import net.nicoulaj.idea.markdown.lang.IElementType;
 import net.nicoulaj.idea.markdown.lang.MarkdownElementTypes;
 import net.nicoulaj.idea.markdown.lang.MarkdownTokenTypes;
-import net.nicoulaj.idea.markdown.lang.parser.MarkdownConstraints;
-import net.nicoulaj.idea.markdown.lang.parser.MarkdownParserUtil;
-import net.nicoulaj.idea.markdown.lang.parser.MarkerBlockImpl;
+import net.nicoulaj.idea.markdown.lang.parser.*;
 import org.jetbrains.annotations.NotNull;
 
 public class ListMarkerBlock extends MarkerBlockImpl {
@@ -34,7 +31,7 @@ public class ListMarkerBlock extends MarkerBlockImpl {
     @NotNull
     protected final IElementType listType;
 
-    public ListMarkerBlock(@NotNull MarkdownConstraints myConstraints, @NotNull PsiBuilder.Marker marker, @NotNull IElementType listType) {
+    public ListMarkerBlock(@NotNull MarkdownConstraints myConstraints, @NotNull ProductionHolder.Marker marker, @NotNull IElementType listType) {
         super(myConstraints, marker, MarkdownTokenTypes.EOL);
 
         this.listType = listType;
@@ -44,16 +41,16 @@ public class ListMarkerBlock extends MarkerBlockImpl {
         return ClosingAction.DONE;
     }
 
-    @NotNull @Override protected ProcessingResult doProcessToken(@NotNull IElementType tokenType, @NotNull PsiBuilder builder, @NotNull MarkdownConstraints currentConstraints) {
+    @NotNull @Override protected ProcessingResult doProcessToken(@NotNull IElementType tokenType, @NotNull TokensCache.Iterator iterator, @NotNull MarkdownConstraints currentConstraints) {
         LOG.assertTrue(tokenType == MarkdownTokenTypes.EOL);
 
-        final int eolN = MarkdownParserUtil.calcNumberOfConsequentEols(builder);
+        final int eolN = MarkdownParserUtil.calcNumberOfConsequentEols(iterator);
         if (eolN >= 3) {
             return ProcessingResult.DEFAULT;
         }
 
-        final int eolIndex = MarkdownParserUtil.getFirstNonWhitespaceLineEolRawIndex(builder);
-        final MarkdownConstraints nextLineConstraints = MarkdownConstraints.fromBase(builder, eolIndex + 1, myConstraints);
+        final int eolIndex = MarkdownParserUtil.getFirstNonWhitespaceLineEolRawIndex(iterator);
+        final MarkdownConstraints nextLineConstraints = MarkdownConstraints.fromBase(iterator, eolIndex + 1, myConstraints);
 
         if (!nextLineConstraints.extendsList(myConstraints)) {
             return ProcessingResult.DEFAULT;

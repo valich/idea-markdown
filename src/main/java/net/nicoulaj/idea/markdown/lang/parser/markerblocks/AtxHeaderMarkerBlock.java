@@ -20,19 +20,20 @@
  */
 package net.nicoulaj.idea.markdown.lang.parser.markerblocks;
 
-import com.intellij.lang.PsiBuilder;
-import com.intellij.psi.tree.IElementType;
+import net.nicoulaj.idea.markdown.lang.IElementType;
 import net.nicoulaj.idea.markdown.lang.MarkdownElementTypes;
 import net.nicoulaj.idea.markdown.lang.MarkdownTokenTypes;
 import net.nicoulaj.idea.markdown.lang.parser.MarkdownConstraints;
 import net.nicoulaj.idea.markdown.lang.parser.MarkerBlockImpl;
+import net.nicoulaj.idea.markdown.lang.parser.ProductionHolder;
+import net.nicoulaj.idea.markdown.lang.parser.TokensCache;
 import org.jetbrains.annotations.NotNull;
 
 public class AtxHeaderMarkerBlock extends MarkerBlockImpl {
     @NotNull
     private final IElementType myNodeType;
 
-    public AtxHeaderMarkerBlock(@NotNull MarkdownConstraints myConstraints, @NotNull PsiBuilder.Marker marker, int headerSize) {
+    public AtxHeaderMarkerBlock(@NotNull MarkdownConstraints myConstraints, @NotNull ProductionHolder.Marker marker, int headerSize) {
         super(myConstraints, marker, MarkdownTokenTypes.EOL);
 
         myNodeType = calcNodeType(headerSize);
@@ -61,7 +62,7 @@ public class AtxHeaderMarkerBlock extends MarkerBlockImpl {
         return ClosingAction.DONE;
     }
 
-    @NotNull @Override protected ProcessingResult doProcessToken(@NotNull IElementType tokenType, @NotNull PsiBuilder builder, @NotNull MarkdownConstraints currentConstraints) {
+    @NotNull @Override protected ProcessingResult doProcessToken(@NotNull IElementType tokenType, @NotNull TokensCache.Iterator iterator, @NotNull MarkdownConstraints currentConstraints) {
         return new ProcessingResult(ClosingAction.DROP, ClosingAction.DONE, EventAction.PROPAGATE);
     }
 

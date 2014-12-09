@@ -21,7 +21,7 @@
 package net.nicoulaj.idea.markdown.lang.dialects;
 
 import com.intellij.openapi.util.Pair;
-import com.intellij.psi.tree.IElementType;
+import net.nicoulaj.idea.markdown.lang.IElementType;
 import net.nicoulaj.idea.markdown.lang.parser.MarkdownConstraints;
 import net.nicoulaj.idea.markdown.lang.parser.MarkerBlock;
 import net.nicoulaj.idea.markdown.lang.parser.MarkerBlockImpl;
@@ -56,7 +56,7 @@ public abstract class FixedPriorityListMarkerProcessor extends MarkerProcessor {
         }
 
         Collections.sort(result, new Comparator<Integer>() {
-            @Override public int compare(Integer o1, Integer o2) {
+            @Override public int compare(@NotNull Integer o1, @NotNull Integer o2) {
                 if (priorityMap.isEmpty()) {
                     return o2 - o1;
                 }
