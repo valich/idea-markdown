@@ -1,6 +1,5 @@
 package net.nicoulaj.idea.markdown.lang.lexer;
 
-import com.intellij.openapi.util.text.StringUtil;
 import net.nicoulaj.idea.markdown.lang.MarkdownTokenTypes;
 import net.nicoulaj.idea.markdown.lang.IElementType;
 
@@ -215,6 +214,15 @@ import java.util.Stack;
       return defaultType;
     }
     return parseDelimited.returnType;
+  }
+
+  private int countChars(CharSequence s, char c) {
+    int result = 0;
+    for (int i = 0; i < s.length(); ++i) {
+      if (s.charAt(i) == c)
+        result++;
+    }
+    return result;
   }
 
 %}
@@ -510,7 +518,7 @@ EMAIL_AUTOLINK = "<" [a-zA-Z0-9.!#$%&'*+/=?\^_`{|}~-]+ "@"[a-zA-Z0-9]([a-zA-Z0-9
   }
 
   {EOL} ({WHITE_SPACE}* ">")* {
-    int newLevel = StringUtil.countChars(yytext(), '>');
+    int newLevel = countChars(yytext(), '>');
     if (newLevel < blockQuotes.level) {
       yypushback(yylength() - 1);
       processEol();

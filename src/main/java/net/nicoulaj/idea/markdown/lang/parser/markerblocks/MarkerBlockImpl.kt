@@ -20,7 +20,6 @@
  */
 package net.nicoulaj.idea.markdown.lang.parser.markerblocks
 
-import com.intellij.openapi.diagnostic.Logger
 import net.nicoulaj.idea.markdown.lang.IElementType
 import net.nicoulaj.idea.markdown.lang.parser.MarkdownConstraints
 import net.nicoulaj.idea.markdown.lang.parser.ProductionHolder
@@ -59,8 +58,4 @@ public abstract class MarkerBlockImpl(protected val constraints: MarkdownConstra
     protected abstract fun doProcessToken(tokenType: IElementType, iterator: TokensCache.Iterator, currentConstraints: MarkdownConstraints): MarkerBlock.ProcessingResult
 
     public abstract fun getDefaultNodeType(): IElementType
-
-    class object {
-        protected val LOG: Logger = Logger.getInstance(javaClass<MarkerBlockImpl>())
-    }
 }

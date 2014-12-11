@@ -71,7 +71,7 @@
 
   public void reset(String buffer, int start, int end,int initialState){
     zzBuffer = buffer;
-    zzBufferArray = com.intellij.util.text.CharArrayUtil.fromSequenceWithoutCopying(buffer);
+    zzBufferArray = null;
     zzCurrentPos = zzMarkedPos = zzStartRead = start;
     zzPushbackPos = 0;
     zzAtEOF  = false;

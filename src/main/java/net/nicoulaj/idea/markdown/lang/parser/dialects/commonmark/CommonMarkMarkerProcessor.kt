@@ -20,7 +20,6 @@
  */
 package net.nicoulaj.idea.markdown.lang.parser.dialects.commonmark
 
-import com.intellij.openapi.util.Pair
 import net.nicoulaj.idea.markdown.lang.IElementType
 import net.nicoulaj.idea.markdown.lang.MarkdownTokenTypes
 import net.nicoulaj.idea.markdown.lang.parser.MarkdownConstraints
@@ -51,7 +50,7 @@ public class CommonMarkMarkerProcessor : FixedPriorityListMarkerProcessor(Markdo
         for (i in itemsByPriority.indices) {
             val types = itemsByPriority.get(i)
             for (`type` in types) {
-                result.add(Pair.create<IElementType, Int>(`type`, i + 1))
+                result.add(Pair(`type`, i + 1))
             }
         }
 

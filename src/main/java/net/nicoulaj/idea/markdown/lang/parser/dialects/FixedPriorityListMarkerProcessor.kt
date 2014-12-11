@@ -20,7 +20,6 @@
  */
 package net.nicoulaj.idea.markdown.lang.parser.dialects
 
-import com.intellij.openapi.util.Pair
 import net.nicoulaj.idea.markdown.lang.IElementType
 import net.nicoulaj.idea.markdown.lang.parser.MarkdownConstraints
 import net.nicoulaj.idea.markdown.lang.parser.MarkerProcessor
@@ -60,7 +59,7 @@ public abstract class FixedPriorityListMarkerProcessor(startingConstraints: Mark
                 val block1 = markersStack.get(o1)
                 val block2 = markersStack.get(o2)
 
-                val diff = getPriority(block1)!! - getPriority(block2)!!
+                val diff = getPriority(block1) - getPriority(block2)
                 if (diff != 0) {
                     return -diff
                 }
@@ -70,14 +69,14 @@ public abstract class FixedPriorityListMarkerProcessor(startingConstraints: Mark
         return result
     }
 
-    private fun getPriority(block: MarkerBlock): Int? {
+    private fun getPriority(block: MarkerBlock): Int {
         if (block !is MarkerBlockImpl) {
             return 0
         }
 
         val `type` = (block : MarkerBlockImpl).getDefaultNodeType()
         if (priorityMap.containsKey(`type`)) {
-            return priorityMap.get(`type`)
+            return priorityMap.get(`type`)?:0
         }
 
         return 0
